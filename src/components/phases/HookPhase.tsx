@@ -3,19 +3,21 @@ import { ArrowRight, Globe, Lock, Mail, ShieldCheck, MapPin, ServerOff } from "l
 import { useState } from "react";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { useAssessment } from "@/lib/assessment/store";
+import { CaptchaVerify } from "@/components/shield/CaptchaVerify";
 
 export function HookPhase() {
   const s = useAssessment();
   const [website, setWebsite] = useState(s.website);
   const [email, setEmail] = useState(s.email);
   const [consent, setConsent] = useState(s.consent);
+  const [captchaPassed, setCaptchaPassed] = useState(false);
 
   const websiteValid = /^([a-z0-9-]+\.)+[a-z]{2,}(\/.*)?$/i.test(
     website.replace(/^https?:\/\//, "").replace(/^www\./, ""),
   );
 
   const submit = () => {
-    if (!websiteValid || !consent) return;
+    if (!websiteValid || !consent || !captchaPassed) return;
     s.setWebsite(website);
     s.setEmail(email);
     s.setConsent(consent);
@@ -104,11 +106,15 @@ export function HookPhase() {
               </span>
             </label>
 
+            <div className="pt-2">
+              <CaptchaVerify onVerify={setCaptchaPassed} />
+            </div>
+
             <motion.button
               onClick={submit}
-              disabled={!websiteValid || !consent}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.98 }}
+              disabled={!websiteValid || !consent || !captchaPassed}
+              whileHover={websiteValid && consent && captchaPassed ? { y: -2 } : undefined}
+              whileTap={websiteValid && consent && captchaPassed ? { scale: 0.98 } : undefined}
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold text-primary-foreground transition-all disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
               style={{
                 background:
