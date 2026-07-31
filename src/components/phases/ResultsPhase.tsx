@@ -69,7 +69,7 @@ export function ResultsPhase() {
     () => computeFlags(s.profile, s.answers, s.scan),
     [s.profile, s.answers, s.scan],
   );
-  const recs = useMemo(() => buildRecommendations(s.profile, flags), [s.profile, flags]);
+  const recs = useMemo(() => buildRecommendations(s.profile, flags, s.scan), [s.profile, flags, s.scan]);
   const nd = useMemo(
     () =>
       computeND(
@@ -237,6 +237,25 @@ export function ResultsPhase() {
                 <Stat label="Breaches" value={s.scan.breach.count} />
               )}
             </div>
+            {s.scan?.breach.checked && s.scan.breach.count > 0 && (
+              <div
+                className="rounded-xl border p-3 text-xs animate-in fade-in slide-in-from-bottom-2 duration-300"
+                style={{
+                  borderColor: "color-mix(in oklab, var(--danger) 25%, transparent)",
+                  background: "color-mix(in oklab, var(--danger) 8%, transparent)",
+                }}
+              >
+                <div className="font-semibold text-[color:oklch(0.75_0.22_25)] animate-pulse" style={{ color: "var(--danger)" }}>
+                  Compromised Credentials Detected
+                </div>
+                <div className="mt-1 text-muted-foreground/90">
+                  Your email ({s.scan.emails.join(", ")}) was exposed in:{" "}
+                  <span className="font-medium text-foreground">
+                    {s.scan.breach.breaches.join(", ")}
+                  </span>
+                </div>
+              </div>
+            )}
             <div
               className="rounded-xl border p-3 text-xs"
               style={{

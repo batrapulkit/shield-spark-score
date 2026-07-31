@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { extractDomain } from "@/lib/assessment/scan";
 import { useAssessment } from "@/lib/assessment/store";
+import { runBreachCheck } from "@/lib/assessment/scan.functions";
 import type { DecisionMaker, Lead } from "@/lib/assessment/types";
 
 interface FormValues {
@@ -62,9 +63,29 @@ export function GatePhase() {
 
   const dm = watch("decisionMaker");
 
-  const submit = (v: FormValues) => {
+  const submit = async (v: FormValues) => {
     const lead: Lead = { ...v };
     s.setLead(lead);
+
+    if (v.email && s.scan) {
+      const emailLower = v.email.toLowerCase().trim();
+      const alreadyChecked = s.scan.emails.some(
+        (e) => e.toLowerCase().trim() === emailLower,
+      );
+      if (!alreadyChecked) {
+        try {
+          const result = await runBreachCheck({ data: { email: emailLower } });
+          s.setScan({
+            ...s.scan,
+            emails: [emailLower],
+            breach: result,
+          });
+        } catch (err) {
+          console.error("Failed to check breaches at GatePhase:", err);
+        }
+      }
+    }
+
     s.setPhase("results");
   };
 

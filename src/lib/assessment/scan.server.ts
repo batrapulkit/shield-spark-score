@@ -187,8 +187,33 @@ async function probePort(domain: string, p: (typeof WEB_PORTS)[number]) {
   }
 }
 
+export async function fetchEmailBreaches(email: string): Promise<string[]> {
+  if (!email || !email.includes("@")) return [];
+  try {
+    const res = await fetch(`https://api.xposedornot.com/v1/check-email/${encodeURIComponent(email)}`, {
+      headers: { "user-agent": UA },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.status === 404) {
+      return [];
+    }
+    if (!res.ok) {
+      return [];
+    }
+    const data = await res.json() as { breaches?: unknown };
+    if (data && data.breaches && Array.isArray(data.breaches)) {
+      const flatList = data.breaches.flat();
+      return flatList.filter((b): b is string => typeof b === "string");
+    }
+    return [];
+  } catch (err) {
+    console.error(`Error checking breaches for ${email}:`, err);
+    return [];
+  }
+}
+
 export async function scanDomain(domain: string, emails: string[]): Promise<ScanResult> {
-  const [txt, dmarcTxt, dkim, mxRaw, nsRaw, caaRaw, dnssecJson] = await Promise.all([
+  const [txt, dmarcTxt, dkim, mxRaw, nsRaw, caaRaw, dnssecJson, breachListRaw] = await Promise.all([
     dns(domain, "TXT"),
     dns(`_dmarc.${domain}`, "TXT"),
     hasDkim(domain),
@@ -196,6 +221,7 @@ export async function scanDomain(domain: string, emails: string[]): Promise<Scan
     dns(domain, "NS"),
     dns(domain, "CAA"),
     dnsQuery(domain, "A"),
+    Promise.all(emails.map((e) => fetchEmailBreaches(e))),
   ]);
 
   const spf = txt.some((t) => /v=spf1/i.test(t));
@@ -304,7 +330,11 @@ export async function scanDomain(domain: string, emails: string[]): Promise<Scan
     banner,
     ports,
     portsChecked: true,
-    breach: { count: 0, breaches: [], checked: false },
+    breach: {
+      count: [...new Set(breachListRaw.flat())].length,
+      breaches: [...new Set(breachListRaw.flat())],
+      checked: emails.length > 0,
+    },
     tech,
   };
 }
