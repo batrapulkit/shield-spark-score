@@ -1,6 +1,8 @@
 import { n as TSS_SERVER_FUNCTION, t as createServerFn } from "./ssr.mjs";
-import { n as objectType, r as stringType, t as arrayType } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/scan.functions-BmO3NvZ6.js
+import { d as computeND, f as computePriority, h as isSensitive, p as computeScore, u as computeFlags } from "./engine-ChQKwUzt.mjs";
+import { i as stringType, n as arrayType, r as objectType, t as anyType } from "../_libs/zod.mjs";
+import { t as createClient } from "../_libs/supabase__supabase-js.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/scan.functions-IwUNYYVP.js
 var createServerRpc = (serverFnMeta, splitImportFn) => {
 	const url = "/_serverFn/" + serverFnMeta.id;
 	return Object.assign(splitImportFn, {
@@ -208,15 +210,33 @@ async function probePort(domain, p) {
 		return null;
 	}
 }
+async function fetchEmailBreaches(email) {
+	if (!email || !email.includes("@")) return [];
+	try {
+		const res = await fetch(`https://api.xposedornot.com/v1/check-email/${encodeURIComponent(email)}`, {
+			headers: { "user-agent": UA },
+			signal: AbortSignal.timeout(6e3)
+		});
+		if (res.status === 404) return [];
+		if (!res.ok) return [];
+		const data = await res.json();
+		if (data && data.breaches && Array.isArray(data.breaches)) return data.breaches.flat().filter((b) => typeof b === "string");
+		return [];
+	} catch (err) {
+		console.error(`Error checking breaches for ${email}:`, err);
+		return [];
+	}
+}
 async function scanDomain(domain, emails) {
-	const [txt, dmarcTxt, dkim, mxRaw, nsRaw, caaRaw, dnssecJson] = await Promise.all([
+	const [txt, dmarcTxt, dkim, mxRaw, nsRaw, caaRaw, dnssecJson, breachListRaw] = await Promise.all([
 		dns(domain, "TXT"),
 		dns(`_dmarc.${domain}`, "TXT"),
 		hasDkim(domain),
 		dns(domain, "MX"),
 		dns(domain, "NS"),
 		dns(domain, "CAA"),
-		dnsQuery(domain, "A")
+		dnsQuery(domain, "A"),
+		Promise.all(emails.map((e) => fetchEmailBreaches(e)))
 	]);
 	const spf = txt.some((t) => /v=spf1/i.test(t));
 	const dmarcRecord = dmarcTxt.find((t) => /v=DMARC1/i.test(t));
@@ -302,12 +322,136 @@ async function scanDomain(domain, emails) {
 		ports,
 		portsChecked: true,
 		breach: {
-			count: 0,
-			breaches: [],
-			checked: false
+			count: [...new Set(breachListRaw.flat())].length,
+			breaches: [...new Set(breachListRaw.flat())],
+			checked: emails.length > 0
 		},
 		tech
 	};
+}
+var cachedToken = null;
+var tokenExpiresAt = 0;
+async function getZohoAccessToken() {
+	const now = Date.now();
+	if (cachedToken && tokenExpiresAt > now + 6e4) return cachedToken;
+	const clientId = process.env.ZOHO_CLIENT_ID;
+	const clientSecret = process.env.ZOHO_CLIENT_SECRET;
+	const refreshToken = process.env.ZOHO_REFRESH_TOKEN;
+	const oauthUrl = process.env.ZOHO_OAUTH_URL || "https://accounts.zohocloud.ca/oauth/v2/token";
+	if (!clientId || !clientSecret || !refreshToken) throw new Error("Missing Zoho credentials in environment variables.");
+	console.log("Refreshing Zoho access token...");
+	const response = await fetch(oauthUrl, {
+		method: "POST",
+		headers: { "Content-Type": "application/x-www-form-urlencoded" },
+		body: new URLSearchParams({
+			refresh_token: refreshToken,
+			client_id: clientId,
+			client_secret: clientSecret,
+			grant_type: "refresh_token"
+		})
+	});
+	if (!response.ok) {
+		const errorBody = await response.text();
+		throw new Error(`Failed to refresh Zoho token: status ${response.status}, body: ${errorBody}`);
+	}
+	const data = await response.json();
+	cachedToken = data.access_token;
+	tokenExpiresAt = now + data.expires_in * 1e3;
+	console.log("Successfully refreshed Zoho access token. Expires in:", data.expires_in, "seconds.");
+	return cachedToken;
+}
+async function createZohoLead(lead, profile, answers, scan) {
+	const token = await getZohoAccessToken();
+	const apiBase = process.env.ZOHO_API_BASE || "https://www.zohoapis.ca/crm/v7";
+	console.log(`Submitting lead ${lead.email} to Zoho CRM...`);
+	const score = computeScore(profile, answers, scan);
+	const priority = computePriority(computeFlags(profile, answers, scan), scan, isSensitive(profile, answers), score.final, lead.decisionMaker);
+	const nd = computeND(profile, answers, scan, lead.decisionMaker, score.final);
+	const [firstName, ...lastNameParts] = lead.name.trim().split(" ");
+	const lastName = lastNameParts.join(" ") || firstName;
+	const descriptionParts = [
+		`=== SHIELD SECURITY SCORE REPORT ===`,
+		`Shield Score: ${score.final}/100 (${score.band})`,
+		`Priority Tier: ${priority.band} (Priority Score: ${priority.score}/15)`,
+		`Complimentary Network Scan Qualified: ${nd.qualified ? "Yes" : "No"}`,
+		`Reason: ${nd.reason}`,
+		``,
+		`=== ORGANIZATION PROFILE ===`,
+		`Industry: ${profile.industry || "Not Answered"}`,
+		`Size: ${profile.size || "Not Answered"}`,
+		`IT Management: ${profile.it || "Not Answered"}`,
+		`Structure: ${profile.setup || "Not Answered"}`,
+		``,
+		`=== EMAIL & DOMAIN PASSIVE SCAN ===`,
+		`Domain: ${scan?.domain || lead.business}`,
+		`Reachable: ${scan?.reachable ? "Yes" : "No"}`,
+		`HTTPS enabled: ${scan?.https ? "Yes" : "No"}`,
+		`SPF configured: ${scan?.spf ? "Yes" : "No"}`,
+		`DKIM configured: ${scan?.dkim ? "Yes" : "No"}`,
+		`DMARC policy: ${scan?.dmarcPolicy || "N/A"}`,
+		`Exposed credentials count: ${scan?.breach?.checked ? scan.breach.count : "Not checked"}`,
+		scan?.breach?.count && scan.breach.count > 0 ? `Breached databases: ${scan.breach.breaches.join(", ")}` : null,
+		``,
+		`=== CRITICAL COMPLIANCE DETAILS ===`,
+		`Consent to Contact: ${lead.consent ? "Yes" : "No"}`,
+		`Is Decision Maker: ${lead.decisionMaker}`
+	].filter((p) => p !== null);
+	const payload = { data: [{
+		First_Name: lastNameParts.length > 0 ? firstName : "",
+		Last_Name: lastName,
+		Company: lead.business || "N/A",
+		Email: lead.email,
+		Phone: lead.phone,
+		Designation: lead.role,
+		Lead_Source: "Cybersecurity Shield Score Scan",
+		Description: descriptionParts.join("\n")
+	}] };
+	const response = await fetch(`${apiBase}/Leads`, {
+		method: "POST",
+		headers: {
+			Authorization: `Zoho-oauthtoken ${token}`,
+			"Content-Type": "application/json"
+		},
+		body: JSON.stringify(payload)
+	});
+	if (!response.ok) {
+		const errorBody = await response.text();
+		console.error(`Zoho CRM Lead submission error: status ${response.status}, body: ${errorBody}`);
+		throw new Error(`Zoho API error: ${response.statusText}`);
+	}
+	const result = await response.json();
+	console.log(`Successfully created Zoho Lead. ID: ${result?.data?.[0]?.details?.id || "unknown"}`);
+	return result;
+}
+var supabaseUrl = process.env.SUPABASE_URL;
+var supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+var supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+async function saveSubmissionToDb(lead, profile, answers, scan) {
+	if (!supabase) {
+		console.warn("Supabase client is not initialized because variables are missing in configuration.");
+		return null;
+	}
+	const scoreResult = computeScore(profile, answers, scan);
+	console.log(`Saving submission in Supabase for ${lead.email}...`);
+	const { data, error } = await supabase.from("submissions").insert({
+		name: lead.name,
+		email: lead.email,
+		business: lead.business || null,
+		phone: lead.phone || null,
+		role: lead.role || null,
+		decision_maker: lead.decisionMaker,
+		consent: lead.consent,
+		score: scoreResult.final,
+		scan_result: scan,
+		answers,
+		profile
+	}).select();
+	if (error) {
+		console.error("Error inserting submission to Supabase:", error);
+		throw error;
+	}
+	console.log("Successfully saved submission to Supabase.");
+	return data;
 }
 var runScan_createServerFn_handler = createServerRpc({
 	id: "ad940233a7c2d0ace956d672c49a239de172d3560a825a8e562ab161369076d0",
@@ -318,5 +462,56 @@ var runScan = createServerFn({ method: "POST" }).inputValidator((data) => object
 	domain: stringType().min(3),
 	emails: arrayType(stringType()).default([])
 }).parse(data)).handler(runScan_createServerFn_handler, async ({ data }) => scanDomain(data.domain, data.emails));
+var runBreachCheck_createServerFn_handler = createServerRpc({
+	id: "137eb6da1c2bb411071b447657c3ca0b01fb27723c9aceee5344950ea628ef54",
+	name: "runBreachCheck",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => runBreachCheck.__executeServer(opts));
+var runBreachCheck = createServerFn({ method: "POST" }).inputValidator((data) => objectType({ email: stringType().email() }).parse(data)).handler(runBreachCheck_createServerFn_handler, async ({ data }) => {
+	const breaches = await fetchEmailBreaches(data.email);
+	return {
+		count: breaches.length,
+		breaches,
+		checked: true
+	};
+});
+var submitToCrm_createServerFn_handler = createServerRpc({
+	id: "8323e29f9d7562c5cb171a71ee40ef0b477fd7aa0fad52be5b34941916ddbb8b",
+	name: "submitToCrm",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => submitToCrm.__executeServer(opts));
+var submitToCrm = createServerFn({ method: "POST" }).inputValidator((data) => objectType({
+	lead: anyType(),
+	profile: anyType(),
+	answers: anyType(),
+	scan: anyType().nullable()
+}).parse(data)).handler(submitToCrm_createServerFn_handler, async ({ data }) => {
+	let dbSuccess = false;
+	let crmSuccess = false;
+	let dbResult = null;
+	let crmResult = null;
+	try {
+		dbResult = await saveSubmissionToDb(data.lead, data.profile, data.answers, data.scan);
+		dbSuccess = true;
+	} catch (dbError) {
+		console.error("Failed to save submission to Supabase:", dbError);
+	}
+	try {
+		crmResult = await createZohoLead(data.lead, data.profile, data.answers, data.scan);
+		crmSuccess = true;
+	} catch (crmError) {
+		console.error("Failed to sync lead to Zoho CRM:", crmError);
+	}
+	return {
+		db: {
+			success: dbSuccess,
+			data: dbResult
+		},
+		crm: {
+			success: crmSuccess,
+			data: crmResult
+		}
+	};
+});
 //#endregion
-export { runScan_createServerFn_handler };
+export { runBreachCheck_createServerFn_handler, runScan_createServerFn_handler, submitToCrm_createServerFn_handler };

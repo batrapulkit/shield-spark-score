@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { extractDomain } from "@/lib/assessment/scan";
 import { useAssessment } from "@/lib/assessment/store";
-import { runBreachCheck } from "@/lib/assessment/scan.functions";
+import { runBreachCheck, submitToCrm } from "@/lib/assessment/scan.functions";
 import type { DecisionMaker, Lead } from "@/lib/assessment/types";
 
 interface FormValues {
@@ -67,6 +67,8 @@ export function GatePhase() {
     const lead: Lead = { ...v };
     s.setLead(lead);
 
+    let currentScan = s.scan;
+
     if (v.email && s.scan) {
       const emailLower = v.email.toLowerCase().trim();
       const alreadyChecked = s.scan.emails.some(
@@ -75,15 +77,30 @@ export function GatePhase() {
       if (!alreadyChecked) {
         try {
           const result = await runBreachCheck({ data: { email: emailLower } });
-          s.setScan({
+          const updatedScan = {
             ...s.scan,
             emails: [emailLower],
             breach: result,
-          });
+          };
+          s.setScan(updatedScan);
+          currentScan = updatedScan;
         } catch (err) {
           console.error("Failed to check breaches at GatePhase:", err);
         }
       }
+    }
+
+    try {
+      await submitToCrm({
+        data: {
+          lead,
+          profile: s.profile,
+          answers: s.answers,
+          scan: currentScan,
+        },
+      });
+    } catch (crmErr) {
+      console.error("Failed to submit lead to Zoho CRM:", crmErr);
     }
 
     s.setPhase("results");
