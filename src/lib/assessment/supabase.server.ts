@@ -21,7 +21,9 @@ export const supabaseAdminClient = (supabaseUrl && (supabaseServiceRoleKey || su
   : null;
 
 // LOCAL FILE FALLBACK DB CACHE (Avoids RLS blocks and database configuration blockers in dev/demos)
-const LOCAL_DB_PATH = path.join(process.cwd(), "tmp", "local_db.json");
+const LOCAL_DB_PATH = process.env.VERCEL
+  ? path.join("/tmp", "local_db.json")
+  : path.join(process.cwd(), "tmp", "local_db.json");
 
 function ensureLocalDb() {
   const dir = path.dirname(LOCAL_DB_PATH);
