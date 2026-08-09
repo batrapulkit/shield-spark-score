@@ -154,7 +154,7 @@ export function ScanPhase() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pb-24 md:pb-0">
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: "Pass", value: passes, color: "var(--success)" },
@@ -204,28 +204,30 @@ export function ScanPhase() {
             </div>
           </div>
 
-          <motion.button
-            disabled={!done}
-            onClick={() => s.setPhase("profile")}
-            whileHover={done ? { y: -2 } : undefined}
-            whileTap={done ? { scale: 0.98 } : undefined}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold text-primary-foreground transition-all disabled:cursor-wait disabled:opacity-40"
-            style={{
-              background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
-              boxShadow:
-                "0 20px 40px -18px color-mix(in oklab, var(--cyan) 70%, transparent)",
-            }}
-          >
-            {done ? (
-              <>
-                Continue to assessment <ArrowRight size={18} />
-              </>
-            ) : (
-              <>
-                Scanning… <Loader2 size={16} className="animate-spin" />
-              </>
-            )}
-          </motion.button>
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/88 backdrop-blur-md border-t border-border/40 z-50 md:relative md:p-0 md:bg-transparent md:border-t-0 md:z-auto md:shadow-none">
+            <motion.button
+              disabled={!done}
+              onClick={() => s.setPhase("profile")}
+              whileHover={done ? { y: -2 } : undefined}
+              whileTap={done ? { scale: 0.98 } : undefined}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-semibold text-primary-foreground transition-all disabled:cursor-wait disabled:opacity-40"
+              style={{
+                background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+                boxShadow:
+                  "0 20px 40px -18px color-mix(in oklab, var(--cyan) 70%, transparent)",
+              }}
+            >
+              {done ? (
+                <>
+                  Continue to assessment <ArrowRight size={18} />
+                </>
+              ) : (
+                <>
+                  Scanning… <Loader2 size={16} className="animate-spin" />
+                </>
+              )}
+            </motion.button>
+          </div>
         </div>
       </div>
     </PhaseShell>

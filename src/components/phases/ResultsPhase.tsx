@@ -588,6 +588,7 @@ function Stat({ label, value, suffix }: { label: string; value: number; suffix?:
 }
 
 function RecCard({ rec, index }: { rec: RecommendationCard; index: number }) {
+  const s = useAssessment();
   const [open, setOpen] = useState(index < 2);
   const color = PRIORITY_COLOR[rec.priority];
   return (
@@ -645,18 +646,26 @@ function RecCard({ rec, index }: { rec: RecommendationCard; index: number }) {
               <Block title="Business impact" body={rec.impact} />
               <Block title="Why it matters" body={rec.why} />
               <Block title="Recommended fix" body={rec.fix} full />
-              {rec.diyGuide && (
-                <div className="sm:col-span-2">
+              <div className="sm:col-span-2 flex flex-wrap items-center gap-2.5 mt-2 font-sans">
+                {rec.diyGuide && (
                   <a
                     href="https://shield-identity.com/resources"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm"
+                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3.5 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm"
                   >
                     DIY Guide → {rec.diyGuide}
                   </a>
-                </div>
-              )}
+                )}
+                <a
+                  href={s.calendlyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[color:var(--cyan)]/30 bg-[color:var(--cyan)]/5 px-3.5 py-2 text-xs font-bold text-[color:var(--cyan-glow)] transition-all hover:bg-[color:var(--cyan)]/15 active:scale-97 hover:scale-102"
+                >
+                  Request Setup Help
+                </a>
+              </div>
             </div>
           </motion.div>
         )}

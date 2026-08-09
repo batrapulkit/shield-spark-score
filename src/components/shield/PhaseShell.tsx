@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { ShieldLogo } from "./ShieldLogo";
+import { useAssessment } from "@/lib/assessment/store";
 
 interface Props {
   children: ReactNode;
@@ -9,15 +10,27 @@ interface Props {
 }
 
 export function PhaseShell({ children, progress, maxWidth = "max-w-3xl" }: Props) {
+  const s = useAssessment();
+
   return (
     <div className="min-h-screen">
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 font-sans">
         <ShieldLogo />
-        <div className="hidden items-center gap-4 text-xs text-muted-foreground sm:flex">
-          <span className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
             <span className="h-2 w-2 rounded-full bg-[color:var(--success)]" />
             Passive scan · No installation
           </span>
+          {s.phase !== "results" && (
+            <a
+              href={s.calendlyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[color:var(--cyan)]/35 bg-[color:var(--cyan)]/10 px-4 py-2 text-xs font-bold text-[color:var(--cyan-glow)] transition-all hover:bg-[color:var(--cyan)]/20 active:scale-97 hover:scale-102 shadow-[0_4px_20px_-8px_rgba(85,225,245,0.3)] hover:shadow-[0_4px_20px_rgba(85,225,245,0.4)]"
+            >
+              Book Consultation
+            </a>
+          )}
         </div>
       </header>
 

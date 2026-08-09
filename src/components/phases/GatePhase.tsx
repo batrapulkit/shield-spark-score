@@ -238,27 +238,37 @@ export function GatePhase() {
           </span>
         </label>
 
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 font-sans">
           <button
             type="button"
             onClick={() => s.setPhase("quick")}
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground self-start sm:self-auto"
           >
             <ArrowLeft size={16} /> Back
           </button>
-          <motion.button
-            type="submit"
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            className="inline-flex items-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-primary-foreground"
-            style={{
-              background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
-              boxShadow:
-                "0 20px 40px -18px color-mix(in oklab, var(--cyan) 70%, transparent)",
-            }}
-          >
-            Unlock my Shield Score <ArrowRight size={16} />
-          </motion.button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <a
+              href={s.calendlyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-ink/15 bg-ink/5 px-5 py-3 text-sm font-semibold text-foreground transition-all hover:bg-ink/10 hover:border-ink/20 active:scale-97 text-center"
+            >
+              Book briefing instead
+            </a>
+            <motion.button
+              type="submit"
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3 text-sm font-semibold text-primary-foreground"
+              style={{
+                background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+                boxShadow:
+                  "0 20px 40px -18px color-mix(in oklab, var(--cyan) 70%, transparent)",
+              }}
+            >
+              Unlock my Shield Score <ArrowRight size={16} />
+            </motion.button>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">

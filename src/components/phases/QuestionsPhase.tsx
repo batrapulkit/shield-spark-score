@@ -253,6 +253,18 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
               <ArrowRight size={16} />
             </motion.button>
           </div>
+
+          <div className="mt-8 border-t border-ink/10 pt-6 text-center text-xs text-muted-foreground font-sans">
+            Stuck on a question or unsure of your controls?{" "}
+            <a
+              href={s.calendlyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[color:var(--cyan-glow)] font-semibold hover:underline inline-flex items-center gap-0.5"
+            >
+              Speak to a security analyst now &rarr;
+            </a>
+          </div>
         </motion.div>
       </AnimatePresence>
     </PhaseShell>

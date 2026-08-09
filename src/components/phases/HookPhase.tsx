@@ -157,6 +157,39 @@ export function HookPhase() {
 
         <HeroPreview />
       </div>
+
+      {/* Alternative Consultation CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="mt-12 border-t border-ink/10 pt-8"
+      >
+        <div className="glass-strong rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 border border-ink/10 relative overflow-hidden backdrop-blur-md">
+          {/* Subtle gradient light */}
+          <div className="absolute -left-12 -top-12 h-24 w-24 rounded-full bg-[color:var(--cyan)] opacity-[0.06] blur-xl" />
+          
+          <div className="space-y-1 text-center md:text-left">
+            <h4 className="text-lg sm:text-xl font-semibold text-foreground">
+              Prefer a live walkthrough with a security expert?
+            </h4>
+            <p className="text-sm text-muted-foreground max-w-xl">
+              Skip the automated scanner and book a direct 1-on-1 assessment check. We'll crawl your site and explain your security posture live.
+            </p>
+          </div>
+          <a
+            href={s.calendlyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full md:w-auto text-center shrink-0 rounded-2xl px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 border border-white/10 hover:shadow-[0_8px_30px_rgb(85,225,245,0.25)]"
+            style={{
+              background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+            }}
+          >
+            Book Free Briefing Directly
+          </a>
+        </div>
+      </motion.div>
     </PhaseShell>
   );
 }
