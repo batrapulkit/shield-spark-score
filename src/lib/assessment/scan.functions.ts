@@ -133,7 +133,7 @@ export const saveAdminSettings = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+    const expectedPassword = process.env.ADMIN_PASSWORD || "Admin@Shield";
     if (data.password !== expectedPassword) {
       throw new Error("Unauthorized: Invalid password");
     }
@@ -149,7 +149,7 @@ export const getSubmissionsList = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+    const expectedPassword = process.env.ADMIN_PASSWORD || "Admin@Shield";
     if (data.password !== expectedPassword) {
       throw new Error("Unauthorized: Invalid password");
     }
@@ -166,7 +166,7 @@ export const deleteSubmissionRecord = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+    const expectedPassword = process.env.ADMIN_PASSWORD || "Admin@Shield";
     if (data.password !== expectedPassword) {
       throw new Error("Unauthorized: Invalid password");
     }
