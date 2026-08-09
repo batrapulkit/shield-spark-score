@@ -13,12 +13,135 @@ interface RowState {
   result?: { ok: "pass" | "warn" | "fail" | "skip"; text: string };
 }
 
+const STEP_EXPLANATIONS: Record<string, {
+  title: string;
+  what: string;
+  meaning: string;
+  resolve: string;
+}> = {
+  reach: {
+    title: "Domain Resolution",
+    what: "Verifies if your business website is publicly reachable and resolves correctly to an IP address.",
+    meaning: "If a domain is not reachable, customers cannot access your website, leading to an immediate loss of trust and revenue.",
+    resolve: "Ensure your domain is pointed to a valid web host via name server settings and the web server is online.",
+  },
+  https: {
+    title: "HTTPS Encryption",
+    what: "Checks if internet browsing traffic to your website is encrypted using SSL/TLS (HTTPS).",
+    meaning: "Without HTTPS, malicious actors on the same network can intercept sensitive data, and browsers will flag your site as 'Not Secure'.",
+    resolve: "Install an SSL certificate (e.g. Let's Encrypt) and configure your web server to redirect all HTTP traffic to HTTPS.",
+  },
+  ssl: {
+    title: "SSL Certificate Validation",
+    what: "Verifies that the website's SSL/TLS certificate is valid, not expired, and issued by a trusted authority.",
+    meaning: "An invalid certificate triggers scary browser warnings that prevent users from entering your site entirely.",
+    resolve: "Renew your SSL certificate regularly or configure automatic renewals through platforms like Let's Encrypt, Cloudflare, or AWS.",
+  },
+  spf: {
+    title: "SPF (Sender Policy Framework)",
+    what: "A DNS record specifying which mail servers are permitted to send email on behalf of your domain.",
+    meaning: "Missing SPF records allow spammers to easily impersonate your business name, leading to domain blacklisting and poor email deliverability.",
+    resolve: "Add a TXT record to your DNS settings containing your authorized mail delivery services (e.g., v=spf1 include:_spf.google.com ~all).",
+  },
+  dkim: {
+    title: "DKIM (DomainKeys Identified Mail)",
+    what: "An email authentication method that adds a cryptographic signature to emails, verifying they were sent by the domain owner.",
+    meaning: "Without DKIM, email providers cannot guarantee that incoming mail hasn't been modified in transit, often routing them directly to Spam.",
+    resolve: "Generate a public-private key pair in your email system (Workspace, O365) and publish the public key as a DNS TXT record.",
+  },
+  dmarc: {
+    title: "DMARC (Domain-based Message Authentication)",
+    what: "An email validation system that defines how a receiver should handle emails from your domain that fail SPF/DKIM checks.",
+    meaning: "If DMARC is missing or misconfigured (e.g. policy set to 'none'), spammers can spoof your brand with absolute impunity.",
+    resolve: "Publish a DMARC TXT record in your DNS settings specifying a quarantine or reject policy (e.g., v=DMARC1; p=quarantine; pct=100).",
+  },
+  mx: {
+    title: "MX (Mail Exchange) Records",
+    what: "DNS records that route incoming emails to your correct email provider servers.",
+    meaning: "Incorrect or missing MX records mean your business cannot receive any incoming customer or partner emails.",
+    resolve: "Ensure your domain's DNS MX records point to your designated mail service provider (e.g. Google Workspace, Microsoft 365).",
+  },
+  dnssec: {
+    title: "DNSSEC (DNS Security Extensions)",
+    what: "Validates DNS queries cryptographically to prevent spoofing and DNS poisoning attacks.",
+    meaning: "Without DNSSEC, attackers could redirect your website traffic or email routes to their malicious servers.",
+    resolve: "Configure and enable DNSSEC in your domain registrar control panel (e.g. GoDaddy, Namecheap) to sign the zones.",
+  },
+  caa: {
+    title: "CAA (Certification Authority Authorization)",
+    what: "A DNS record that restricts which Certificate Authorities (CAs) are allowed to issue SSL certificates for your domain.",
+    meaning: "Failing to set a CAA record allows rogue authorities to issue unauthorized SSL certificates for your brand.",
+    resolve: "Add CAA records to your domain's DNS manager specifying your trusted issuers (e.g., issue 'letsencrypt.org').",
+  },
+  tls: {
+    title: "HSTS (HTTP Strict Transport Security)",
+    what: "A security header instructing browsers to connect to your website exclusively over secure HTTPS channels.",
+    meaning: "Without HSTS, users are vulnerable to SSL stripping attacks, where an attacker downgrades their connection back to unencrypted HTTP.",
+    resolve: "Add the Strict-Transport-Security header to your web server's responses (e.g., max-age=63072000; includeSubDomains; preload).",
+  },
+  headers: {
+    title: "Security Headers",
+    what: "Verifies the presence of key defense-in-depth headers like CSP, X-Frame-Options, and X-Content-Type-Options.",
+    meaning: "Missing security headers expose your website visitors to clickjacking, cross-site scripting (XSS), and content sniffing exploits.",
+    resolve: "Add required headers (like Content-Security-Policy, X-Frame-Options: DENY, and X-Content-Type-Options: nosniff) on your web host.",
+  },
+  cookies: {
+    title: "Cookie Security Flags",
+    what: "Checks if cookies are set with secure attributes (Secure, HttpOnly, and SameSite).",
+    meaning: "Cookies lacking these flags can be stolen via XSS or intercepted over unencrypted network nodes.",
+    resolve: "Set 'HttpOnly; Secure; SameSite=Strict' in all cookie headers on your server.",
+  },
+  mixed: {
+    title: "Mixed Content Checks",
+    what: "Audits whether your secure HTTPS site contains links or loading elements using insecure HTTP.",
+    meaning: "Mixed content allows attackers to tamper with or spy on parts of an otherwise encrypted page, undermining visitor safety.",
+    resolve: "Update all database references and asset paths (images, scripts, styles) on your website to use prefix 'https://'.",
+  },
+  banner: {
+    title: "Software Version Disclosure",
+    what: "Scans server response headers (like Server, X-Powered-By) to check if your server software names and versions are exposed.",
+    meaning: "Disclosing exact version numbers helps attackers find matching public CVE exploits to target your server directly.",
+    resolve: "Disable server signature banners in your web server config files (e.g. set 'server_tokens off' in Nginx).",
+  },
+  files: {
+    title: "Exposed Sensitive Files",
+    what: "Checks if sensitive installation folders, backups, or git configuration files are publicly accessible (e.g., .git/config, config.php.bak).",
+    meaning: "Exposed config files can leak database credentials, source code secrets, and private business assets to the public web.",
+    resolve: "Remove backup files from web roots and restrict folder permissions using web server rules (e.g. .htaccess or Nginx deny rules).",
+  },
+  subdomains: {
+    title: "Subdomain Footprint Check",
+    what: "Queries public certificate logs to list all subdomains registered to your brand.",
+    meaning: "Finding obsolete or abandoned subdomains (e.g. staging, old promotions) exposes your business to subdomain hijacking.",
+    resolve: "Audit your subdomain certificates and de-register obsolete domains, deleting any dns entries.",
+  },
+  ports: {
+    title: "Exposed Network Ports",
+    what: "Scans for open HTTP/HTTPS port overrides that are publicly listening (e.g., 8080, 8443).",
+    meaning: "Exposing non-standard admin portals or debug ports invites automated brute-force attacks and scans.",
+    resolve: "Close non-essential ports at the wall registry/firewall layer, wrapping access inside a secure VPN.",
+  },
+  tech: {
+    title: "Technology Stack Fingerprint",
+    what: "Identifies front-end libraries, CMS platforms, or analytics software running on your website.",
+    meaning: "Using outdated or unsupported software platforms (like end-of-life WordPress versions) creates critical attack angles.",
+    resolve: "Keep all plugins, web software frameworks, and script integrations updated to their latest patches.",
+  },
+  breach: {
+    title: "Data Breach Exposure Check",
+    what: "Audits if your company emails are listed in known public database breaches.",
+    meaning: "Compromised credentials lead directly to account takeovers, spear-phishing attacks, and identity fraud.",
+    resolve: "Enforce multi-factor authentication (MFA) across all employee accounts and mandate immediate password resets.",
+  },
+};
+
 export function ScanPhase() {
   const s = useAssessment();
   const [rows, setRows] = useState<RowState[]>(
     SCAN_STEPS.map((st) => ({ key: st.key, label: st.label, status: "pending" })),
   );
   const [done, setDone] = useState(false);
+  const [selectedCheck, setSelectedCheck] = useState<RowState | null>(null);
 
   useEffect(() => {
     const emails = [s.email, ...s.extraEmails].filter(Boolean);
@@ -176,16 +299,21 @@ export function ScanPhase() {
           </div>
 
           <div className="glass rounded-2xl p-5">
-            <div className="text-sm font-semibold">Live findings</div>
-            <div className="mt-3 space-y-2 text-sm">
+            <div className="flex items-center justify-between font-sans">
+              <div className="text-sm font-semibold">Live findings</div>
+              <span className="text-[10px] text-muted-foreground/75 italic">Click row for details</span>
+            </div>
+            <div className="mt-3 space-y-1.5 text-sm">
               {findings.slice(0, 8).map((f) => (
-                <div
+                <button
                   key={f.key}
-                  className="flex items-center justify-between border-b border-ink/5 pb-2 last:border-0"
+                  disabled={f.status !== "done"}
+                  onClick={() => setSelectedCheck(f)}
+                  className="flex w-full items-center justify-between border-b border-ink/5 pb-2 last:border-0 hover:bg-ink/5 p-1 px-2 -mx-2 rounded-lg transition-colors text-left disabled:pointer-events-none cursor-pointer"
                 >
-                  <span className="text-muted-foreground">{f.result!.text}</span>
+                  <span className="text-muted-foreground mr-2 truncate">{f.result!.text}</span>
                   <span
-                    className="text-[10px] font-semibold uppercase"
+                    className="text-[10px] font-semibold uppercase shrink-0"
                     style={{
                       color:
                         f.result!.ok === "pass"
@@ -199,7 +327,7 @@ export function ScanPhase() {
                   >
                     {f.result!.ok}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -230,6 +358,84 @@ export function ScanPhase() {
           </div>
         </div>
       </div>
+
+      {/* Interactive check explanation slide-up detail modal */}
+      <AnimatePresence>
+        {selectedCheck && (() => {
+          const info = STEP_EXPLANATIONS[selectedCheck.key] || {
+            title: selectedCheck.label,
+            what: "We ran this check to determine public vulnerabilities associated with your domain.",
+            meaning: "This parameter forms a core element of your domain's public cyber exposure threat score.",
+            resolve: "Update DNS values, security header configurations, or server software settings to address warnings.",
+          };
+          
+          const statusColor =
+            selectedCheck.result?.ok === "pass"
+              ? "var(--success)"
+              : selectedCheck.result?.ok === "warn"
+                ? "var(--warning)"
+                : selectedCheck.result?.ok === "skip"
+                  ? "var(--muted-foreground)"
+                  : "var(--danger)";
+
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedCheck(null)}
+              className="fixed inset-0 bg-ink/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 font-sans"
+            >
+              <motion.div
+                initial={{ scale: 0.95, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 15 }}
+                onClick={(e) => e.stopPropagation()}
+                className="glass-strong max-w-lg w-full rounded-3xl p-6 sm:p-8 space-y-6 relative border border-ink/10"
+              >
+                <button
+                  onClick={() => setSelectedCheck(null)}
+                  className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-ink/5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div
+                    className="h-2.5 w-2.5 rounded-full shrink-0 animate-pulse"
+                    style={{ backgroundColor: statusColor }}
+                  />
+                  <h3 className="text-xl font-bold text-foreground pr-6">{info.title}</h3>
+                </div>
+
+                <div className="space-y-4 text-sm">
+                  <div className="space-y-1">
+                    <h5 className="font-semibold text-foreground uppercase tracking-wider text-[10px] text-muted-foreground">What this is</h5>
+                    <p className="text-muted-foreground leading-relaxed">{info.what}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h5 className="font-semibold text-foreground uppercase tracking-wider text-[10px] text-muted-foreground">Meaning & Security Risk</h5>
+                    <p className="text-muted-foreground leading-relaxed">{info.meaning}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <h5 className="font-semibold text-foreground uppercase tracking-wider text-[10px] text-muted-foreground">How to resolve</h5>
+                    <p className="text-muted-foreground leading-relaxed">{info.resolve}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => setSelectedCheck(null)}
+                    className="w-full text-center py-2.5 rounded-xl bg-ink/10 hover:bg-ink/15 text-sm font-semibold transition-colors cursor-pointer"
+                  >
+                    Close Overview
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </PhaseShell>
   );
 }
