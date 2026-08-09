@@ -1,5 +1,5 @@
-import { t as createMiddleware } from "./createMiddleware-B_4t7rW1.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/start-BUsx_AOA.js
+import { n as createMiddleware, t as createCsrfMiddleware } from "./createCsrfMiddleware-B2To0gPJ.mjs";
+//#region node_modules/.nitro/vite/services/ssr/assets/start-BFDLqOyY.js
 function dedupeSerializationAdapters(deduped, serializationAdapters) {
 	for (let i = 0, len = serializationAdapters.length; i < len; i++) {
 		const current = serializationAdapters[i];
@@ -65,6 +65,7 @@ var errorMiddleware = createMiddleware().server(async ({ next }) => {
 		});
 	}
 });
-var startInstance = createStart(() => ({ requestMiddleware: [errorMiddleware] }));
+var csrfMiddleware = createCsrfMiddleware({ filter: (ctx) => ctx.handlerType === "serverFn" });
+var startInstance = createStart(() => ({ requestMiddleware: [errorMiddleware, csrfMiddleware] }));
 //#endregion
 export { startInstance };

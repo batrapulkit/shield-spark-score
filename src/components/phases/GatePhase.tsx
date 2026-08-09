@@ -1,11 +1,18 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, Lock, ChevronDown } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { extractDomain } from "@/lib/assessment/scan";
 import { useAssessment } from "@/lib/assessment/store";
 import { runBreachCheck, submitToCrm } from "@/lib/assessment/scan.functions";
 import type { DecisionMaker, Lead } from "@/lib/assessment/types";
+import {
+  isLocalNet,
+  isSolo,
+  staff10plus,
+  ownServer,
+  devices11plus,
+} from "@/lib/assessment/engine";
 
 interface FormValues {
   name: string;
@@ -21,16 +28,19 @@ function Field({
   label,
   error,
   children,
+  required = false,
 }: {
   label: string;
   error?: string;
   children: React.ReactNode;
+  required?: boolean;
 }) {
   return (
     <label className="group relative block">
       <div className="glass rounded-2xl border border-ink/10 px-4 pb-2 pt-5 transition-colors focus-within:border-[color:var(--cyan)]/60">
-        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
-          {label}
+        <div className="text-[11px] uppercase tracking-widest text-muted-foreground flex items-center gap-0.5">
+          <span>{label}</span>
+          {required && <span className="text-[color:var(--danger)] font-bold">*</span>}
         </div>
         {children}
       </div>
@@ -62,6 +72,14 @@ export function GatePhase() {
   });
 
   const dm = watch("decisionMaker");
+  const isEligible =
+    isLocalNet(s.profile) &&
+    !isSolo(s.profile) &&
+    (staff10plus(s.profile) ||
+      ownServer(s.profile) ||
+      devices11plus(s.answers) ||
+      s.profile.it === "Me / the owner" ||
+      s.profile.it === "No one, really");
 
   const submit = async (v: FormValues) => {
     const lead: Lead = { ...v };
@@ -116,27 +134,27 @@ export function GatePhase() {
           Where should we send your Shield Score report?
         </h1>
         <p className="mt-2 max-w-xl text-muted-foreground">
-          We'll unlock your full dashboard, tailored recommendations, and — if you
-          qualify — an offer for a complimentary internal network assessment.
+          We'll unlock your full dashboard, tailored recommendations,
+          {isEligible ? " and — if you qualify — an offer for a complimentary internal network assessment." : "."}
         </p>
       </motion.div>
 
       <form onSubmit={handleSubmit(submit)} className="mt-8 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Full name" error={errors.name?.message}>
+          <Field label="Full name" error={errors.name?.message} required>
             <input
               autoFocus
               {...register("name", { required: "Required", minLength: { value: 2, message: "Enter your name" } })}
               className="mt-1 w-full bg-transparent text-base text-foreground focus:outline-none"
             />
           </Field>
-          <Field label="Business" error={errors.business?.message}>
+          <Field label="Business" error={errors.business?.message} required>
             <input
               {...register("business", { required: "Required" })}
               className="mt-1 w-full bg-transparent text-base text-foreground focus:outline-none"
             />
           </Field>
-          <Field label="Work email" error={errors.email?.message}>
+          <Field label="Work email" error={errors.email?.message} required>
             <input
               type="email"
               {...register("email", {
@@ -149,17 +167,29 @@ export function GatePhase() {
           <Field label="Phone" error={errors.phone?.message}>
             <input
               type="tel"
-              {...register("phone", { required: "Required", minLength: { value: 7, message: "Enter a valid phone" } })}
+              {...register("phone")}
               className="mt-1 w-full bg-transparent text-base text-foreground focus:outline-none"
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Your role" error={errors.role?.message}>
-              <input
-                {...register("role", { required: "Required" })}
-                placeholder="Owner, IT Manager, Office Manager…"
-                className="mt-1 w-full bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
-              />
+            <Field label="Position" error={errors.role?.message} required>
+              <div className="relative mt-1">
+                <select
+                  {...register("role", { required: "Required" })}
+                  className="w-full bg-transparent text-base text-foreground focus:outline-none appearance-none cursor-pointer pr-8"
+                >
+                  <option value="" className="bg-white text-muted-foreground" disabled>Select position...</option>
+                  <option value="CEO / Owner / Founder" className="bg-white text-foreground">CEO / Owner / Founder</option>
+                  <option value="IT Director / Manager" className="bg-white text-foreground">IT Director / Manager</option>
+                  <option value="Office Manager" className="bg-white text-foreground">Office Manager</option>
+                  <option value="Executive / VP" className="bg-white text-foreground">Executive / VP</option>
+                  <option value="Operations / Admin" className="bg-white text-foreground">Operations / Admin</option>
+                  <option value="Other" className="bg-white text-foreground">Other</option>
+                </select>
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
             </Field>
           </div>
         </div>

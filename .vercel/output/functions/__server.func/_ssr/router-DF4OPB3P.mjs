@@ -1,9 +1,9 @@
 import { n as require_jsx_runtime, t as QueryClientProvider } from "../_libs/react+tanstack__react-query.mjs";
 import { c as HeadContent, d as Outlet, f as lazyRouteComponent, g as useRouter, h as Link, m as createRootRouteWithContext, p as createFileRoute, s as Scripts, u as createRouter } from "../_libs/@tanstack/react-router+[...].mjs";
 import { t as QueryClient } from "../_libs/tanstack__query-core.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-D_WxRdJG.js
+//#region node_modules/.nitro/vite/services/ssr/assets/router-DF4OPB3P.js
 var import_jsx_runtime = require_jsx_runtime();
-var styles_default = "/assets/styles-aNAyZC8p.css";
+var styles_default = "/assets/styles-BonMk_au.css";
 function NotFoundComponent() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "flex min-h-screen items-center justify-center bg-background px-4",
@@ -69,7 +69,7 @@ function ErrorComponent({ error, reset }) {
 		})
 	});
 }
-var Route$1 = createRootRouteWithContext()({
+var Route$2 = createRootRouteWithContext()({
 	head: () => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -136,14 +136,14 @@ function RootShell({ children }) {
 	});
 }
 function RootComponent() {
-	const { queryClient } = Route$1.useRouteContext();
+	const { queryClient } = Route$2.useRouteContext();
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(QueryClientProvider, {
 		client: queryClient,
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(Outlet, {})
 	});
 }
-var $$splitComponentImporter = () => import("./routes-CWVE33xV.mjs");
-var rootRouteChildren = { IndexRoute: createFileRoute("/")({
+var $$splitComponentImporter$1 = () => import("./routes-BiuPe06E.mjs");
+var Route$1 = createFileRoute("/")({
 	head: () => ({ meta: [
 		{ title: "Shield Score — Cybersecurity Assessment for SMBs | Shield Identity" },
 		{
@@ -175,13 +175,29 @@ var rootRouteChildren = { IndexRoute: createFileRoute("/")({
 			content: "/logo.png"
 		}
 	] }),
-	component: lazyRouteComponent($$splitComponentImporter, "component")
-}).update({
-	id: "/",
-	path: "/",
-	getParentRoute: () => Route$1
-}) };
-var routeTree = Route$1._addFileChildren(rootRouteChildren)._addFileTypes();
+	component: lazyRouteComponent($$splitComponentImporter$1, "component")
+});
+var $$splitComponentImporter = () => import("./admin-CkvCM9Xt.mjs");
+var Route = createFileRoute("/admin")({
+	component: lazyRouteComponent($$splitComponentImporter, "component"),
+	head: () => ({ meta: [{ title: "Admin Panel | Shield Score Assessment" }, {
+		name: "description",
+		content: "Shield Score Cybersecurity Assessment Administration"
+	}] })
+});
+var rootRouteChildren = {
+	IndexRoute: Route$1.update({
+		id: "/",
+		path: "/",
+		getParentRoute: () => Route$2
+	}),
+	AdminRoute: Route.update({
+		id: "/admin",
+		path: "/admin",
+		getParentRoute: () => Route$2
+	})
+};
+var routeTree = Route$2._addFileChildren(rootRouteChildren)._addFileTypes();
 var getRouter = () => {
 	return createRouter({
 		routeTree,

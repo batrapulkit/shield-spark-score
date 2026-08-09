@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
 import type { Answers, Lead, Phase, Profile, ScanResult } from "./types";
 
 interface State {
@@ -12,6 +12,7 @@ interface State {
   answers: Answers;
   lead: Lead | null;
   deepMode: boolean;
+  calendlyUrl: string;
 }
 
 interface Ctx extends State {
@@ -25,6 +26,7 @@ interface Ctx extends State {
   setAnswer: <K extends keyof Answers>(key: K, value: Answers[K]) => void;
   setLead: (l: Lead) => void;
   setDeepMode: (v: boolean) => void;
+  setCalendlyUrl: (v: string) => void;
   reset: () => void;
 }
 
@@ -41,10 +43,30 @@ const initial: State = {
   answers: {},
   lead: null,
   deepMode: false,
+  calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
 };
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(initial);
+
+  // Fetch admin settings for Calendly booking link on mount
+  useEffect(() => {
+    import("./scan.functions")
+      .then(({ getAdminSettings }) => {
+        getAdminSettings()
+          .then((settings) => {
+            if (settings?.calendlyUrl) {
+              setState((s) => ({ ...s, calendlyUrl: settings.calendlyUrl }));
+            }
+          })
+          .catch((err) => {
+            console.warn("Could not load configured Calendly URL on mount, sticking with default:", err);
+          });
+      })
+      .catch((err) => {
+        console.warn("Could not resolve scan functions dynamically on mount:", err);
+      });
+  }, []);
 
   const value = useMemo<Ctx>(
     () => ({
@@ -60,6 +82,7 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, answers: { ...s.answers, [key]: value } })),
       setLead: (l) => setState((s) => ({ ...s, lead: l })),
       setDeepMode: (v) => setState((s) => ({ ...s, deepMode: v })),
+      setCalendlyUrl: (v) => setState((s) => ({ ...s, calendlyUrl: v })),
       reset: () => setState(initial),
     }),
     [state],

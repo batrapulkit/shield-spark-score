@@ -95,6 +95,27 @@ export function ResultsPhase() {
     [score.final, score.band, flags],
   );
 
+  const applicableGuides = useMemo(() => {
+    const guides = new Map<string, string>();
+    recs.forEach((r) => {
+      if (r.diyGuide) {
+        let title = "";
+        if (r.diyGuide === "guide-mfa") title = "Multi-Factor Authentication (MFA) Setup Guide";
+        else if (r.diyGuide === "guide-backup") title = "3-2-1 Enterprise Backup Strategy Guide";
+        else if (r.diyGuide === "guide-phish") title = "Employee Phishing Awareness Training Kit";
+        else if (r.diyGuide === "kit") title = "Shield Cyber Starter Kit Template";
+        else if (r.diyGuide === "guide-pw") title = "Password Manager Deployment Plan";
+        else if (r.diyGuide === "guide-ai") title = "Corporate AI Use & Data Protection Policy";
+        else if (r.diyGuide === "guide-pentest") title = "External Penetration Testing Scope Checklist";
+        
+        if (title) {
+          guides.set(r.diyGuide, title);
+        }
+      }
+    });
+    return Array.from(guides.entries());
+  }, [recs]);
+
   const radarData = cats.map((c) => ({
     subject: c.key,
     score: c.value ?? 0,
@@ -137,10 +158,10 @@ export function ResultsPhase() {
             <Download size={16} /> Download PDF Report
           </button>
           <a
-            href="https://shield-identity.com/contact"
+            href={s.calendlyUrl}
             target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 shadow-[0_8px_30px_rgb(85,225,245,0.2)] hover:shadow-[0_8px_40px_rgb(85,225,245,0.45)] hover:brightness-110 border border-cyan/10"
             style={{
               background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
             }}
@@ -151,63 +172,54 @@ export function ResultsPhase() {
       </motion.div>
 
       {/* Qualification banner */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="mt-8 overflow-hidden rounded-3xl border p-6 sm:p-8"
-        style={{
-          borderColor: nd.qualified
-            ? "color-mix(in oklab, var(--success) 40%, transparent)"
-            : "color-mix(in oklab, var(--cyan) 30%, transparent)",
-          background: nd.qualified
-            ? "linear-gradient(135deg, color-mix(in oklab, var(--success) 22%, var(--navy-2)), var(--navy-2))"
-            : "linear-gradient(135deg, color-mix(in oklab, var(--cyan) 15%, var(--navy-2)), var(--navy-2))",
-        }}
-      >
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-start gap-4">
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-2xl"
+      {nd.qualified && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="mt-8 overflow-hidden rounded-3xl border p-6 sm:p-8"
+          style={{
+            borderColor: "color-mix(in oklab, var(--success) 40%, transparent)",
+            background: "linear-gradient(135deg, color-mix(in oklab, var(--success) 22%, var(--navy-2)), var(--navy-2))",
+          }}
+        >
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div className="flex items-start gap-4">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                style={{
+                  background: "color-mix(in oklab, var(--success) 30%, transparent)",
+                }}
+              >
+                <Award size={22} className="text-[color:var(--success)]" />
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Congratulations
+                </div>
+                <div className="mt-1 text-xl font-semibold sm:text-2xl">
+                  You qualify for a complimentary Internal Network Discovery Assessment.
+                </div>
+                <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                  Limited spots available — one-business-day scheduling, no obligation.
+                </div>
+              </div>
+            </div>
+            <a
+              href={s.calendlyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto text-center shrink-0 rounded-2xl px-6 py-3.5 text-base font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 border border-white/10"
               style={{
-                background: nd.qualified
-                  ? "color-mix(in oklab, var(--success) 30%, transparent)"
-                  : "color-mix(in oklab, var(--cyan) 25%, transparent)",
+                background: "linear-gradient(135deg, oklch(0.9 0.15 155), var(--success))",
+                boxShadow: "0 10px 30px -10px rgba(34, 197, 94, 0.45)",
               }}
             >
-              <Award size={22} className={nd.qualified ? "text-[color:var(--success)]" : "text-[color:var(--cyan)]"} />
-            </div>
-            <div>
-              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                {nd.qualified ? "Congratulations" : "Recommended next step"}
-              </div>
-              <div className="mt-1 text-xl font-semibold sm:text-2xl">
-                {nd.qualified
-                  ? "You qualify for a complimentary Internal Network Discovery Assessment."
-                  : "Let's strengthen your fundamentals first."}
-              </div>
-              <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                {nd.qualified
-                  ? "Limited spots available — one-business-day scheduling, no obligation."
-                  : `Based on your answers we recommend improving your cybersecurity fundamentals before scheduling an assessment. (${nd.reason})`}
-              </div>
-            </div>
+              Claim my free scan
+            </a>
           </div>
-          <a
-            href="https://shield-identity.com/contact"
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-primary-foreground"
-            style={{
-              background: nd.qualified
-                ? "linear-gradient(135deg, oklch(0.9 0.15 155), var(--success))"
-                : "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
-            }}
-          >
-            {nd.qualified ? "Claim my free scan" : "Book my free review"}
-          </a>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
 
       {/* Main grid */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
@@ -483,6 +495,78 @@ export function ResultsPhase() {
         </button>
       </motion.div>
 
+      {/* DIY Guide List */}
+      {applicableGuides.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-3xl p-6 mt-6 border border-ink/10"
+        >
+          <h3 className="text-lg font-semibold">Your DIY Guide Checklist</h3>
+          <p className="text-xs text-muted-foreground mt-1 mb-4">
+            Step-by-step documentation to help you implement these recommendations immediately.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {applicableGuides.map(([id, title]) => (
+              <a
+                key={id}
+                href="https://shield-identity.com/resources"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-2xl border border-ink/10 p-4 transition-all hover:bg-ink/5 hover:border-[color:var(--cyan)]/45 group"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--cyan)]/10 text-[color:var(--cyan-glow)]">
+                  <Sparkles size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                    DIY GUIDE
+                  </div>
+                  <div className="text-sm font-semibold truncate text-[color:var(--card-foreground)] group-hover:text-[color:var(--cyan)]">
+                    {title}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Prominent Bottom CTA section */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mt-8 rounded-3xl p-8 text-center border relative overflow-hidden glass-strong shadow-xl"
+        style={{
+          borderColor: "color-mix(in oklab, var(--cyan) 30%, transparent)",
+          background: "radial-gradient(circle at top right, color-mix(in oklab, var(--cyan) 12%, transparent), transparent), color-mix(in oklab, white 88%, transparent)"
+        }}
+      >
+        {/* Subtle decorative glow */}
+        <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-[color:var(--cyan)] opacity-20 blur-2xl pointer-events-none" />
+
+        <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[color:var(--ink)]">
+          Ready to Secure Your Business?
+        </h3>
+        <p className="mt-3 text-sm sm:text-base text-muted-foreground max-w-xl mx-auto leading-relaxed">
+          Book a free 15-minute consultation to walk through your Shield Score, prioritize your recommendations, and build your custom roadmap.
+        </p>
+        <div className="mt-8 flex justify-center w-full">
+          <a
+            href={s.calendlyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-3 rounded-2xl px-10 py-4.5 text-base sm:text-lg font-bold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 shadow-[0_12px_35px_rgba(85,225,245,0.35)] hover:shadow-[0_12px_45px_rgba(85,225,245,0.55)] hover:brightness-110 border border-white/10"
+            style={{
+              background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+            }}
+          >
+            <CalendarCheck size={22} className="shrink-0" />
+            <span>Book Free Security Consultation</span>
+          </a>
+        </div>
+      </motion.div>
+
       <footer className="mt-12 border-t border-ink/10 pt-6 text-center text-xs text-muted-foreground">
         Shield Identity · Shield Score v5 · Passive assessment. Results based on your
         answers and public data only.
@@ -566,8 +650,8 @@ function RecCard({ rec, index }: { rec: RecommendationCard; index: number }) {
                   <a
                     href="https://shield-identity.com/resources"
                     target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3 py-2 text-xs font-semibold text-[color:var(--card-foreground)]"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm"
                   >
                     DIY Guide → {rec.diyGuide}
                   </a>

@@ -44,6 +44,45 @@ export function emptyScan(domain: string, emails: string[]): ScanResult {
   };
 }
 
+export function mockScan(domain: string, emails: string[]): ScanResult {
+  return {
+    domain,
+    emails,
+    reachable: true,
+    https: true,
+    ssl: "valid" as const,
+    spf: true,
+    dkim: false,
+    dmarc: false,
+    dmarcPolicy: "missing" as const,
+    tlsBad: false,
+    headers: false,
+    headersFound: ["HSTS", "X-Frame-Options", "X-Content-Type-Options"],
+    headersMissing: ["CSP", "Referrer-Policy", "Permissions-Policy"],
+    mx: ["mx1.clean-mail.com", "mx2.clean-mail.com"],
+    mailProvider: "Office 365",
+    caa: false,
+    dnssec: false,
+    nameservers: ["dns1.registrar.com", "dns2.registrar.com"],
+    subdomains: ["www." + domain, "mail." + domain],
+    subdomainsChecked: true,
+    exposedPaths: [],
+    exposedPathsChecked: true,
+    cookieIssues: ["session_id: no HttpOnly"],
+    cookiesChecked: true,
+    mixedContent: 1,
+    banner: "nginx/1.18.0",
+    ports: [],
+    portsChecked: true,
+    breach: {
+      count: emails.length > 0 ? 2 : 0,
+      breaches: emails.length > 0 ? ["linkedin", "canva"] : [],
+      checked: emails.length > 0,
+    },
+    tech: ["WordPress", "Nginx", "Google Analytics"],
+  };
+}
+
 export interface ScanStep {
   key: string;
   label: string;

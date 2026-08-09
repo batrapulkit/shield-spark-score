@@ -1,0 +1,14 @@
+Calling saveSubmissionToDb dynamically...
+Saving submission in Supabase for john.test@shield-identity.local...
+Error inserting submission to Supabase: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row violates row-level security policy for table "submissions"'
+}
+Failed to save: {
+  code: '42501',
+  details: null,
+  hint: null,
+  message: 'new row violates row-level security policy for table "submissions"'
+}

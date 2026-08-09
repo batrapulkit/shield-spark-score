@@ -1,23 +1,15 @@
-export function ShieldLogo({ size = 32 }: { size?: number }) {
+export function ShieldLogo({ size = 72 }: { size?: number }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center">
       <img
         src="/logo.png"
         alt="Shield Logo"
         className="rounded-xl object-contain"
         style={{
-          width: size,
           height: size,
+          width: "auto",
         }}
       />
-      <div className="flex flex-col leading-none">
-        <span className="text-sm font-semibold tracking-tight text-foreground">
-          Shield Identity
-        </span>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-          Shield Score
-        </span>
-      </div>
     </div>
   );
 }

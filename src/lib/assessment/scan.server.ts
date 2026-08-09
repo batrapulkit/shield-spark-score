@@ -1,7 +1,99 @@
 import type { ScanResult } from "./types";
+import dnsPromises from "node:dns/promises";
+import https from "node:https";
+import http from "node:http";
 
 const DOH = "https://cloudflare-dns.com/dns-query";
 const UA = "ShieldScore/1.0 (+passive-scan)";
+
+async function fetchDomainBypassingSsl(
+  url: string,
+  depth = 0
+): Promise<{ reachable: boolean; headers: Headers; html: string; finalUrl: string }> {
+  if (depth > 5) {
+    throw new Error("Too many redirects");
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      const parsed = new URL(url);
+      const isHttps = parsed.protocol === "https:";
+      const client = isHttps ? https : http;
+
+      const options: https.RequestOptions = {
+        hostname: parsed.hostname,
+        port: parsed.port || (isHttps ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: "GET",
+        headers: { "User-Agent": UA },
+        timeout: 10000,
+      };
+
+      if (isHttps) {
+        options.agent = new https.Agent({ rejectUnauthorized: false });
+      }
+
+      const req = client.request(options, (res) => {
+        if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const redirectUrl = new URL(res.headers.location, url).toString();
+          fetchDomainBypassingSsl(redirectUrl, depth + 1)
+            .then(resolve)
+            .catch(() => {
+              const headers = new Headers();
+              for (const [key, val] of Object.entries(res.headers)) {
+                if (val !== undefined) {
+                  headers.set(key, Array.isArray(val) ? val.join(", ") : val);
+                }
+              }
+              resolve({
+                reachable: true,
+                headers,
+                html: "",
+                finalUrl: url,
+              });
+            });
+          return;
+        }
+
+        const headers = new Headers();
+        for (const [key, val] of Object.entries(res.headers)) {
+          if (val !== undefined) {
+            headers.set(key, Array.isArray(val) ? val.join(", ") : val);
+          }
+        }
+
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => {
+          if (body.length < 300000) {
+            body += chunk;
+          }
+        });
+        res.on("end", () => {
+          resolve({
+            reachable: true,
+            headers,
+            html: body,
+            finalUrl: url,
+          });
+        });
+      });
+
+      req.on("error", (err) => {
+        reject(err);
+      });
+
+      req.on("timeout", () => {
+        req.destroy();
+        reject(new Error("Timeout"));
+      });
+
+      req.end();
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
 
 async function dnsQuery(name: string, type: string) {
   try {
@@ -19,7 +111,53 @@ async function dnsQuery(name: string, type: string) {
   }
 }
 
+async function systemDns(
+  name: string,
+  type: "TXT" | "A" | "MX" | "CNAME" | "NS" | "CAA"
+): Promise<string[]> {
+  try {
+    if (type === "TXT") {
+      const records = await dnsPromises.resolveTxt(name);
+      return records.map(r => r.join(" "));
+    }
+    if (type === "A") {
+      return await dnsPromises.resolve4(name);
+    }
+    if (type === "MX") {
+      const records = await dnsPromises.resolveMx(name);
+      return records.map((r) => `${r.priority} ${r.exchange}`);
+    }
+    if (type === "CNAME") {
+      return await dnsPromises.resolveCname(name);
+    }
+    if (type === "NS") {
+      return await dnsPromises.resolveNs(name);
+    }
+    if (type === "CAA") {
+      const records = await dnsPromises.resolveCaa(name);
+      return records.map((r: any) => `${r.critical ?? r.flag ?? 0} ${r.tag} "${r.value}"`);
+    }
+    return [];
+  } catch (err: any) {
+    if (err.code !== "ENODATA" && err.code !== "ENOTFOUND") {
+      console.warn(`System DNS query failed for ${name} (${type}):`, err.message || err);
+    }
+    return [];
+  }
+}
+
 async function dns(name: string, type: "TXT" | "A" | "MX" | "CNAME" | "NS" | "CAA") {
+  // 1. Try local system DNS resolution first (robust, VPN/intranet safe)
+  try {
+    const list = await systemDns(name, type);
+    if (list && list.length > 0) {
+      return list;
+    }
+  } catch {
+    // Fall back to DoH
+  }
+
+  // 2. DoH alternative
   const json = await dnsQuery(name, type);
   return (json?.Answer ?? []).map((a) =>
     a.data.replace(/^"|"$/g, "").replace(/"\s*"/g, ""),
@@ -213,6 +351,7 @@ export async function fetchEmailBreaches(email: string): Promise<string[]> {
 }
 
 export async function scanDomain(domain: string, emails: string[]): Promise<ScanResult> {
+
   const [txt, dmarcTxt, dkim, mxRaw, nsRaw, caaRaw, dnssecJson, breachListRaw] = await Promise.all([
     dns(domain, "TXT"),
     dns(`_dmarc.${domain}`, "TXT"),
@@ -245,13 +384,13 @@ export async function scanDomain(domain: string, emails: string[]): Promise<Scan
   let banner: string | null = null;
 
   try {
-    const res = await fetch(`https://${domain}/`, {
-      redirect: "follow",
-      headers: { "user-agent": UA },
-      signal: AbortSignal.timeout(10000),
-    });
+    const res = await fetchDomainBypassingSsl(`https://${domain}/`);
+
+
+
+
     reachable = true;
-    https = res.url.startsWith("https://");
+    https = res.finalUrl.startsWith("https://");
     ssl = "valid"; // a completed TLS handshake means the chain validated
     const h = res.headers;
     const checks: [string, string][] = [
@@ -271,7 +410,7 @@ export async function scanDomain(domain: string, emails: string[]): Promise<Scan
     const ck = cookieProblems(h);
     cookieIssues = ck.issues;
     cookiesChecked = ck.checked;
-    const html = (await res.text().catch(() => "")).slice(0, 300_000);
+    const html = res.html.slice(0, 300_000);
     tech = detectTech(h, html);
     mixedContent = (
       html.match(/(?:src|href)=["']http:\/\/(?!localhost)/gi) ?? []

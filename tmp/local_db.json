@@ -1,0 +1,278 @@
+{
+  "submissions": [
+    {
+      "name": "Pulkit Batra",
+      "email": "batrapulkit1103@gmail.com",
+      "business": "Education",
+      "phone": "3439897204",
+      "role": "CEO / Owner / Founder",
+      "decision_maker": "Yes, I decide",
+      "consent": true,
+      "score": 27,
+      "scan_result": {
+        "domain": "shield-identity.com",
+        "emails": [
+          "batrapulkit1103@gmail.com"
+        ],
+        "reachable": true,
+        "https": true,
+        "ssl": "valid",
+        "spf": true,
+        "dkim": false,
+        "dmarc": false,
+        "dmarcPolicy": "missing",
+        "tlsBad": true,
+        "headers": false,
+        "headersFound": [
+          "CSP",
+          "Permissions-Policy"
+        ],
+        "headersMissing": [
+          "HSTS",
+          "X-Frame-Options",
+          "X-Content-Type-Options",
+          "Referrer-Policy"
+        ],
+        "mx": [
+          "shieldidentity-com01e.mail.protection.outlook.com"
+        ],
+        "mailProvider": "Microsoft 365",
+        "caa": false,
+        "dnssec": false,
+        "nameservers": [
+          "ns2.dns-parking.com",
+          "ns1.dns-parking.com"
+        ],
+        "subdomains": [],
+        "subdomainsChecked": true,
+        "exposedPaths": [],
+        "exposedPathsChecked": true,
+        "cookieIssues": [],
+        "cookiesChecked": false,
+        "mixedContent": 0,
+        "banner": "x-powered-by: PHP/8.3.31",
+        "ports": [],
+        "portsChecked": true,
+        "breach": {
+          "count": 3,
+          "breaches": [
+            "Jefit",
+            "Udemy",
+            "AlienStealerLogs"
+          ],
+          "checked": true
+        },
+        "tech": [
+          "PHP",
+          "WordPress",
+          "Google Analytics"
+        ]
+      },
+      "answers": {
+        "emailmfa": "Sort of",
+        "edr": "Sort of",
+        "backup": "Sort of",
+        "train": "Not sure",
+        "industryData": "Yes",
+        "devices": "6–10",
+        "emailtype": "Own domain",
+        "assets": "No",
+        "patching": "Yes",
+        "pw": "Manager",
+        "accessoff": "Sort of",
+        "monitor": "Sort of",
+        "aiuse": "Yes regularly",
+        "airules": "No",
+        "incidenthistory": "No",
+        "remotework": "Not sure"
+      },
+      "profile": {
+        "size": "2–9",
+        "it": "Me / the owner",
+        "setup": "Everything's in the cloud (Microsoft 365, Google…)",
+        "industry": "Professional services (legal, accounting, consulting)"
+      },
+      "created_at": "2026-08-09T18:50:57.761Z"
+    },
+    {
+      "name": "Pulkit Batra",
+      "email": "bugcrowd1103@gmail.com",
+      "business": "Triponic",
+      "phone": null,
+      "role": "CEO / Owner / Founder",
+      "decision_maker": "Yes, I decide",
+      "consent": true,
+      "score": 36,
+      "scan_result": {
+        "domain": "partners.triponic.com",
+        "emails": [
+          "bugcrowd1103@gmail.com"
+        ],
+        "reachable": true,
+        "https": true,
+        "ssl": "valid",
+        "spf": false,
+        "dkim": false,
+        "dmarc": false,
+        "dmarcPolicy": "missing",
+        "tlsBad": true,
+        "headers": false,
+        "headersFound": [],
+        "headersMissing": [
+          "HSTS",
+          "CSP",
+          "X-Frame-Options",
+          "X-Content-Type-Options",
+          "Referrer-Policy",
+          "Permissions-Policy"
+        ],
+        "mx": [
+          "sea-turtle-app-nguf8.ondigitalocean.app"
+        ],
+        "mailProvider": "Self-hosted / other",
+        "caa": true,
+        "dnssec": false,
+        "nameservers": [
+          "sea-turtle-app-nguf8.ondigitalocean.app"
+        ],
+        "subdomains": [],
+        "subdomainsChecked": false,
+        "exposedPaths": [],
+        "exposedPathsChecked": true,
+        "cookieIssues": [],
+        "cookiesChecked": true,
+        "mixedContent": 0,
+        "banner": null,
+        "ports": [
+          {
+            "port": 8080,
+            "name": "HTTP alt (8080)"
+          }
+        ],
+        "portsChecked": true,
+        "breach": {
+          "count": 3,
+          "breaches": [
+            "MemeChat",
+            "Gemini",
+            "AlienStealerLogs"
+          ],
+          "checked": true
+        },
+        "tech": [
+          "Cloudflare"
+        ]
+      },
+      "answers": {
+        "emailmfa": "Yes",
+        "edr": "Sort of",
+        "backup": "Sort of",
+        "train": "Sort of",
+        "industryData": "Yes",
+        "devices": "6–10",
+        "emailtype": "Own domain",
+        "assets": "Sort of",
+        "patching": "Yes",
+        "pw": "Sort of",
+        "accessoff": "Yes",
+        "monitor": "Sort of",
+        "aiuse": "Some",
+        "airules": "Sort of",
+        "incidenthistory": "Not sure",
+        "remotework": "Sometimes"
+      },
+      "profile": {
+        "size": "2–9",
+        "it": "Me / the owner",
+        "setup": "Cloud plus some office computers",
+        "industry": "Healthcare / dental / clinic"
+      },
+      "created_at": "2026-08-09T18:02:30.679Z"
+    },
+    {
+      "name": "Himanshu",
+      "email": "clientTest@cybersec.ca",
+      "business": "Cybersec Canada",
+      "phone": "6475550199",
+      "role": "CEO / Director",
+      "decision_maker": "Yes, I decide",
+      "consent": true,
+      "score": 91,
+      "scan_result": {
+        "domain": "google.com",
+        "emails": [
+          "clienttest@cybersec.ca"
+        ],
+        "reachable": true,
+        "https": true,
+        "ssl": "valid",
+        "spf": true,
+        "dkim": false,
+        "dmarc": true,
+        "dmarcPolicy": "reject",
+        "tlsBad": true,
+        "headers": false,
+        "headersFound": [
+          "X-Frame-Options"
+        ],
+        "headersMissing": [
+          "HSTS",
+          "CSP",
+          "X-Content-Type-Options",
+          "Referrer-Policy",
+          "Permissions-Policy"
+        ],
+        "mx": [],
+        "mailProvider": null,
+        "caa": true,
+        "dnssec": false,
+        "nameservers": [
+          "ns4.google.com",
+          "ns2.google.com",
+          "ns3.google.com",
+          "ns1.google.com"
+        ],
+        "subdomains": [],
+        "subdomainsChecked": false,
+        "exposedPaths": [],
+        "exposedPathsChecked": true,
+        "cookieIssues": [
+          "__Secure-STRP: no HttpOnly",
+          "NID: no Secure",
+          "NID: no SameSite"
+        ],
+        "cookiesChecked": true,
+        "mixedContent": 1,
+        "banner": null,
+        "ports": [],
+        "portsChecked": true,
+        "breach": {
+          "count": 0,
+          "breaches": [],
+          "checked": true
+        },
+        "tech": []
+      },
+      "answers": {
+        "emailmfa": "Yes",
+        "edr": "Yes",
+        "backup": "Yes",
+        "train": "Yes",
+        "incident": "Yes",
+        "verify": "Yes"
+      },
+      "profile": {
+        "size": "10–49",
+        "it": "An outside IT company",
+        "setup": "Everything's in the cloud (Microsoft 365, Google…)",
+        "industry": "Professional services (legal, accounting, consulting)"
+      },
+      "created_at": "2026-08-09T15:26:43.537Z"
+    }
+  ],
+  "settings": {
+    "calendlyUrl": "https://calendly.com/shieldidentity-ca/consultation",
+    "zohoEnabled": true,
+    "scanMode": "authentic"
+  }
+}

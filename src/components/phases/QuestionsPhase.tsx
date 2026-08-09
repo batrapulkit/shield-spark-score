@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, HelpCircle } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { OptionCard } from "@/components/shield/OptionCard";
 import {
@@ -21,11 +21,19 @@ interface Props {
 
 export function QuestionsPhase({ mode, onDone, onBack }: Props) {
   const s = useAssessment();
+  const [currentMode, setCurrentMode] = useState<"quick" | "deep">(mode);
+  const [showDeeperPrompt, setShowDeeperPrompt] = useState(false);
   const [i, setI] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
 
+  useEffect(() => {
+    setCurrentMode(mode);
+    setI(0);
+    setShowDeeperPrompt(false);
+  }, [mode]);
+
   const queue = useMemo<QuestionDef[]>(() => {
-    if (mode === "quick") {
+    if (currentMode === "quick") {
       let q = [...QUICK_QUESTIONS];
       if (s.profile.size === "Just me (no staff)") q = q.filter((x) => x.id !== "train");
       return q;
@@ -71,7 +79,7 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
     }
     return deep;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, s.profile, s.email, s.website]);
+  }, [currentMode, s.profile, s.email, s.website]);
 
   const q = queue[i];
   const answer = (s.answers as Record<string, string | undefined>)[q?.id ?? ""];
@@ -84,6 +92,11 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
   };
 
   const nextStep = () => {
+    if (currentMode === "quick" && i === 3 && !showDeeperPrompt) {
+      setShowDeeperPrompt(true);
+      setShowHelp(false);
+      return;
+    }
     if (i < queue.length - 1) setI(i + 1);
     else onDone();
     setShowHelp(false);
@@ -91,11 +104,73 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
 
   const back = () => {
     setShowHelp(false);
+    if (showDeeperPrompt) {
+      setShowDeeperPrompt(false);
+      return;
+    }
     if (i === 0) {
       if (onBack) onBack();
       else s.setPhase("profile");
     } else setI(i - 1);
   };
+
+  if (showDeeperPrompt) {
+    return (
+      <PhaseShell
+        progress={{
+          current: 4,
+          total: queue.length,
+          label: "Assessment Checkpoint",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-strong rounded-3xl p-8 text-center max-w-xl mx-auto border border-ink/10 relative overflow-hidden"
+        >
+          {/* Decorative gradients */}
+          <div className="absolute -left-12 -top-12 h-32 w-32 rounded-full bg-[color:var(--cyan)] opacity-[0.08] blur-xl" />
+          <div className="absolute -right-12 -bottom-12 h-32 w-32 rounded-full bg-violet-600 opacity-[0.08] blur-xl" />
+
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[color:var(--cyan)]/10 text-[color:var(--cyan-glow)]">
+            <HelpCircle size={28} />
+          </div>
+
+          <h2 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
+            Want to go deeper?
+          </h2>
+          <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+            You've completed the baseline security questions. You can unlock advanced recommendations and double the accuracy of your Shield Score by answering a few optional deep-dive questions now.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <button
+              onClick={() => {
+                setShowDeeperPrompt(false);
+                setCurrentMode("deep");
+                setI(0);
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 border border-white/10 shadow-[0_8px_30px_rgb(85,225,245,0.2)] hover:shadow-[0_8px_40px_rgb(85,225,245,0.45)]"
+              style={{
+                background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+              }}
+            >
+              Go deeper <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={() => {
+                setShowDeeperPrompt(false);
+                setI(4);
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl border border-ink/15 bg-ink/5 px-6 py-3.5 text-sm font-medium text-foreground transition-all duration-300 hover:bg-ink/10"
+            >
+              No, keep it quick
+            </button>
+          </div>
+        </motion.div>
+      </PhaseShell>
+    );
+  }
 
   if (!q) return null;
 
@@ -104,7 +179,7 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
       progress={{
         current: i + 1,
         total: queue.length,
-        label: mode === "quick" ? "Cybersecurity assessment" : "Deep-dive assessment",
+        label: currentMode === "quick" ? "Cybersecurity assessment" : "Deep-dive assessment",
       }}
     >
       <AnimatePresence mode="wait">
@@ -174,7 +249,7 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
                 background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
               }}
             >
-              {i === queue.length - 1 ? (mode === "quick" ? "See my score" : "Update results") : "Next"}
+              {i === queue.length - 1 ? (currentMode === "quick" ? "See my score" : "Update results") : "Next"}
               <ArrowRight size={16} />
             </motion.button>
           </div>

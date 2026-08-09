@@ -1,15 +1,14 @@
 import { o as __toESM } from "../_runtime.mjs";
 import { n as require_jsx_runtime, r as require_react } from "../_libs/react+tanstack__react-query.mjs";
-import { n as TSS_SERVER_FUNCTION, r as getServerFnById, t as createServerFn } from "./ssr.mjs";
-import { a as QUICK_QUESTIONS, c as buildRecommendations, d as computeND, f as computePriority, h as isSensitive, i as IT_OPTIONS, l as categorySubscores, m as executiveSummary, n as INDUSTRY_META, o as SETUP_OPTIONS, p as computeScore, r as INDUSTRY_OPTIONS, s as SIZE_OPTIONS, t as DEEP_QUESTIONS, u as computeFlags } from "./engine-ChQKwUzt.mjs";
-import { i as stringType, n as arrayType, r as objectType, t as anyType } from "../_libs/zod.mjs";
+import { a as runScan, c as submitToCrm, i as runBreachCheck } from "./scan.functions-Cqp79Ftk.mjs";
 import { a as AnimatePresence, i as motion, n as useTransform, r as useMotionValue, t as animate } from "../_libs/framer-motion.mjs";
-import { C as Award, S as BadgeCheck, T as ArrowLeft, _ as ChevronDown, a as Sparkles, b as Building2, c as MapPin, d as LoaderCircle, f as Globe, g as CircleMinus, h as CircleQuestionMark, i as TrendingUp, l as Mail, m as Cloud, n as Users, o as ShieldCheck, p as Download, r as TriangleAlert, s as ServerOff, t as X, u as Lock, v as Check, w as ArrowRight, x as Briefcase, y as CalendarCheck } from "../_libs/lucide-react.mjs";
+import { A as Building2, D as ChevronDown, E as CircleMinus, F as ArrowLeft, M as BadgeCheck, N as Award, O as Check, P as ArrowRight, T as CircleQuestionMark, f as MapPin, g as LoaderCircle, h as Lock, i as TrendingUp, j as Briefcase, k as CalendarCheck, n as Users, o as Sparkles, p as Mail, r as TriangleAlert, s as ShieldCheck, t as X, u as ServerOff, v as Globe, w as Cloud, x as Download } from "../_libs/lucide-react.mjs";
+import { _ as extractDomain, a as QUICK_QUESTIONS, c as SIZE_OPTIONS, d as computeFlags, f as computeND, g as executiveSummary, h as emptyScan, i as IT_OPTIONS, l as buildRecommendations, m as computeScore, n as INDUSTRY_META, o as SCAN_STEPS, p as computePriority, r as INDUSTRY_OPTIONS, s as SETUP_OPTIONS, t as DEEP_QUESTIONS, u as categorySubscores, v as isSensitive } from "./engine-B1qeQA5Y.mjs";
 import { t as clsx } from "../_libs/clsx.mjs";
 import { t as twMerge } from "../_libs/tailwind-merge.mjs";
 import { t as useForm } from "../_libs/react-hook-form.mjs";
 import { a as CartesianGrid, c as PolarAngleAxis, d as Tooltip, i as XAxis, l as PolarGrid, n as BarChart, o as Bar, r as YAxis, s as Radar, t as RadarChart, u as ResponsiveContainer } from "../_libs/recharts+[...].mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CWVE33xV.js
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BiuPe06E.js
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 var AssessmentContext = (0, import_react.createContext)(null);
@@ -23,10 +22,25 @@ var initial = {
 	profile: {},
 	answers: {},
 	lead: null,
-	deepMode: false
+	deepMode: false,
+	calendlyUrl: "https://shield-identity.com/contact"
 };
 function AssessmentProvider({ children }) {
 	const [state, setState] = (0, import_react.useState)(initial);
+	(0, import_react.useEffect)(() => {
+		import("./scan.functions-Cqp79Ftk.mjs").then((n) => n.s).then((n) => n.s).then(({ getAdminSettings }) => {
+			getAdminSettings().then((settings) => {
+				if (settings?.calendlyUrl) setState((s) => ({
+					...s,
+					calendlyUrl: settings.calendlyUrl
+				}));
+			}).catch((err) => {
+				console.warn("Could not load configured Calendly URL on mount, sticking with default:", err);
+			});
+		}).catch((err) => {
+			console.warn("Could not resolve scan functions dynamically on mount:", err);
+		});
+	}, []);
 	const value = (0, import_react.useMemo)(() => ({
 		...state,
 		setPhase: (p) => setState((s) => ({
@@ -74,6 +88,10 @@ function AssessmentProvider({ children }) {
 		setDeepMode: (v) => setState((s) => ({
 			...s,
 			deepMode: v
+		})),
+		setCalendlyUrl: (v) => setState((s) => ({
+			...s,
+			calendlyUrl: v
 		})),
 		reset: () => setState(initial)
 	}), [state]);
@@ -501,261 +519,6 @@ function HeroPreview() {
 		]
 	});
 }
-function extractDomain(url) {
-	try {
-		return new URL(url.startsWith("http") ? url : `https://${url}`).hostname.replace(/^www\./, "");
-	} catch {
-		return url.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-	}
-}
-function emptyScan(domain, emails) {
-	return {
-		domain,
-		emails,
-		reachable: false,
-		https: false,
-		ssl: "weak",
-		spf: false,
-		dkim: false,
-		dmarc: false,
-		dmarcPolicy: "missing",
-		tlsBad: false,
-		headers: false,
-		headersFound: [],
-		headersMissing: [],
-		mx: [],
-		mailProvider: null,
-		caa: false,
-		dnssec: false,
-		nameservers: [],
-		subdomains: [],
-		subdomainsChecked: false,
-		exposedPaths: [],
-		exposedPathsChecked: false,
-		cookieIssues: [],
-		cookiesChecked: false,
-		mixedContent: 0,
-		banner: null,
-		ports: [],
-		portsChecked: false,
-		breach: {
-			count: 0,
-			breaches: [],
-			checked: false
-		},
-		tech: []
-	};
-}
-var SCAN_STEPS = [
-	{
-		key: "reach",
-		label: "Resolving domain...",
-		passLabel: (r) => ({
-			ok: r.reachable ? "pass" : "warn",
-			text: r.reachable ? "Site Reachable" : "Site Did Not Respond"
-		})
-	},
-	{
-		key: "https",
-		label: "Checking HTTPS...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.https ? "pass" : "fail",
-			text: r.https ? "HTTPS Enforced" : "HTTPS Not Enforced"
-		}
-	},
-	{
-		key: "ssl",
-		label: "Validating SSL certificate...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.ssl === "valid" ? "pass" : "warn",
-			text: r.ssl === "valid" ? "Certificate Valid" : "Certificate Issue"
-		}
-	},
-	{
-		key: "spf",
-		label: "Looking up SPF record...",
-		passLabel: (r) => ({
-			ok: r.spf ? "pass" : "fail",
-			text: r.spf ? "SPF Found" : "SPF Missing"
-		})
-	},
-	{
-		key: "dkim",
-		label: "Looking up DKIM selectors...",
-		passLabel: (r) => ({
-			ok: r.dkim ? "pass" : "warn",
-			text: r.dkim ? "DKIM Found" : "No DKIM On Common Selectors"
-		})
-	},
-	{
-		key: "dmarc",
-		label: "Looking up DMARC record...",
-		passLabel: (r) => ({
-			ok: r.dmarcPolicy === "missing" ? "fail" : r.dmarcPolicy === "none" ? "warn" : "pass",
-			text: r.dmarcPolicy === "missing" ? "DMARC Missing" : `DMARC p=${r.dmarcPolicy}`
-		})
-	},
-	{
-		key: "mx",
-		label: "Checking mail routing (MX)...",
-		passLabel: (r) => ({
-			ok: r.mx.length ? "pass" : "warn",
-			text: r.mx.length ? `Mail: ${r.mailProvider}` : "No MX Records Found"
-		})
-	},
-	{
-		key: "dnssec",
-		label: "Checking DNSSEC validation...",
-		passLabel: (r) => ({
-			ok: r.dnssec ? "pass" : "warn",
-			text: r.dnssec ? "DNSSEC Validated" : "DNSSEC Not Enabled"
-		})
-	},
-	{
-		key: "caa",
-		label: "Checking CAA certificate policy...",
-		passLabel: (r) => ({
-			ok: r.caa ? "pass" : "warn",
-			text: r.caa ? "CAA Record Set" : "No CAA Record"
-		})
-	},
-	{
-		key: "tls",
-		label: "Checking HSTS / transport policy...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.tlsBad ? "warn" : "pass",
-			text: r.tlsBad ? "HSTS Not Set" : "HSTS Enabled"
-		}
-	},
-	{
-		key: "headers",
-		label: "Checking security headers...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.headers ? "pass" : "warn",
-			text: r.headersMissing.length ? `Missing: ${r.headersMissing.join(", ")}` : "All Security Headers Present"
-		}
-	},
-	{
-		key: "cookies",
-		label: "Checking cookie security flags...",
-		passLabel: (r) => !r.cookiesChecked ? {
-			ok: "skip",
-			text: "No Cookies Set On Homepage"
-		} : {
-			ok: r.cookieIssues.length ? "warn" : "pass",
-			text: r.cookieIssues.length ? `${r.cookieIssues.length} Cookie Flag Issue(s)` : "Cookies Correctly Flagged"
-		}
-	},
-	{
-		key: "mixed",
-		label: "Checking for insecure (mixed) content...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.mixedContent ? "warn" : "pass",
-			text: r.mixedContent ? `${r.mixedContent} Insecure HTTP Reference(s)` : "No Mixed Content"
-		}
-	},
-	{
-		key: "banner",
-		label: "Checking software version disclosure...",
-		passLabel: (r) => !r.reachable ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.banner ? "warn" : "pass",
-			text: r.banner ? `Version Disclosed — ${r.banner}` : "No Version Disclosure"
-		}
-	},
-	{
-		key: "files",
-		label: "Probing for exposed sensitive files...",
-		passLabel: (r) => !r.exposedPathsChecked ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.exposedPaths.length ? "fail" : "pass",
-			text: r.exposedPaths.length ? `Exposed: ${r.exposedPaths.map((p) => p.path).join(", ")}` : "No Exposed Sensitive Files"
-		}
-	},
-	{
-		key: "subdomains",
-		label: "Enumerating subdomains via certificate logs...",
-		passLabel: (r) => !r.subdomainsChecked ? {
-			ok: "skip",
-			text: "Certificate Log Unavailable"
-		} : {
-			ok: r.subdomains.length > 25 ? "warn" : "pass",
-			text: `${r.subdomains.length} Subdomain(s) In Public CT Logs`
-		}
-	},
-	{
-		key: "ports",
-		label: "Checking exposed alternate web ports...",
-		passLabel: (r) => !r.portsChecked ? {
-			ok: "skip",
-			text: "Not Checked"
-		} : {
-			ok: r.ports.length ? "warn" : "pass",
-			text: r.ports.length ? `Open: ${r.ports.map((p) => p.name).join(", ")}` : "No Alternate Web Ports Open (8080/8443)"
-		}
-	},
-	{
-		key: "tech",
-		label: "Fingerprinting website technologies...",
-		passLabel: (r) => ({
-			ok: r.tech.length ? "pass" : "skip",
-			text: r.tech.length ? `Tech Detected: ${r.tech.join(", ")}` : "No Public Fingerprint"
-		})
-	},
-	{
-		key: "breach",
-		label: "Checking known data breaches...",
-		passLabel: (r) => !r.breach.checked ? {
-			ok: "skip",
-			text: r.emails.length ? "Breach Lookup Requires Licensed Data Source" : "No Email Provided (skipped)"
-		} : {
-			ok: r.breach.count ? "fail" : "pass",
-			text: r.breach.count ? `${r.breach.count} Breach Exposure${r.breach.count === 1 ? "" : "s"} Found` : "No Known Breaches"
-		}
-	}
-];
-var createSsrRpc = (functionId) => {
-	const url = "/_serverFn/" + functionId;
-	const serverFnMeta = { id: functionId };
-	const fn = async (...args) => {
-		return (await getServerFnById(functionId, { origin: "server" }))(...args);
-	};
-	return Object.assign(fn, {
-		url,
-		serverFnMeta,
-		[TSS_SERVER_FUNCTION]: true
-	});
-};
-var runScan = createServerFn({ method: "POST" }).inputValidator((data) => objectType({
-	domain: stringType().min(3),
-	emails: arrayType(stringType()).default([])
-}).parse(data)).handler(createSsrRpc("ad940233a7c2d0ace956d672c49a239de172d3560a825a8e562ab161369076d0"));
-var runBreachCheck = createServerFn({ method: "POST" }).inputValidator((data) => objectType({ email: stringType().email() }).parse(data)).handler(createSsrRpc("137eb6da1c2bb411071b447657c3ca0b01fb27723c9aceee5344950ea628ef54"));
-var submitToCrm = createServerFn({ method: "POST" }).inputValidator((data) => objectType({
-	lead: anyType(),
-	profile: anyType(),
-	answers: anyType(),
-	scan: anyType().nullable()
-}).parse(data)).handler(createSsrRpc("8323e29f9d7562c5cb171a71ee40ef0b477fd7aa0fad52be5b34941916ddbb8b"));
 function ScanPhase() {
 	const s = useAssessment();
 	const [rows, setRows] = (0, import_react.useState)(SCAN_STEPS.map((st) => ({
@@ -1750,10 +1513,10 @@ function ResultsPhase() {
 						onClick: () => window.print(),
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(Download, { size: 16 }), " Download PDF Report"]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
-						href: "https://shield-identity.com/contact",
+						href: s.calendlyUrl,
 						target: "_blank",
-						rel: "noreferrer",
-						className: "inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground",
+						rel: "noopener noreferrer",
+						className: "inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 shadow-[0_8px_30px_rgb(85,225,245,0.2)] hover:shadow-[0_8px_40px_rgb(85,225,245,0.45)] hover:brightness-110 border border-cyan/10",
 						style: { background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))" },
 						children: [/* @__PURE__ */ (0, import_jsx_runtime.jsx)(CalendarCheck, { size: 16 }), " Schedule Free Consultation"]
 					})]
@@ -1800,11 +1563,14 @@ function ResultsPhase() {
 							})
 						] })]
 					}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("a", {
-						href: "https://shield-identity.com/contact",
+						href: s.calendlyUrl,
 						target: "_blank",
-						rel: "noreferrer",
-						className: "shrink-0 rounded-xl px-5 py-3 text-sm font-semibold text-primary-foreground",
-						style: { background: nd.qualified ? "linear-gradient(135deg, oklch(0.9 0.15 155), var(--success))" : "linear-gradient(135deg, var(--cyan-glow), var(--cyan))" },
+						rel: "noopener noreferrer",
+						className: "w-full sm:w-auto text-center shrink-0 rounded-2xl px-6 py-3.5 text-base font-semibold text-primary-foreground transition-all duration-300 hover:scale-103 active:scale-97 border border-white/10",
+						style: {
+							background: nd.qualified ? "linear-gradient(135deg, oklch(0.9 0.15 155), var(--success))" : "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+							boxShadow: nd.qualified ? "0 10px 30px -10px rgba(34, 197, 94, 0.45)" : "0 10px 30px -10px rgba(85, 225, 245, 0.45)"
+						},
 						children: nd.qualified ? "Claim my free scan" : "Book my free review"
 					})]
 				})
@@ -2259,8 +2025,8 @@ function RecCard({ rec, index }) {
 							children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("a", {
 								href: "https://shield-identity.com/resources",
 								target: "_blank",
-								rel: "noreferrer",
-								className: "inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3 py-2 text-xs font-semibold text-[color:var(--card-foreground)]",
+								rel: "noopener noreferrer",
+								className: "inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm",
 								children: ["DIY Guide → ", rec.diyGuide]
 							})
 						})

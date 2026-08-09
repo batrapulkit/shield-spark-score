@@ -1,8 +1,13 @@
-import { n as TSS_SERVER_FUNCTION, t as createServerFn } from "./ssr.mjs";
-import { d as computeND, f as computePriority, h as isSensitive, p as computeScore, u as computeFlags } from "./engine-ChQKwUzt.mjs";
-import { i as stringType, n as arrayType, r as objectType, t as anyType } from "../_libs/zod.mjs";
+import { n as createServerFn, t as TSS_SERVER_FUNCTION } from "./ssr.mjs";
+import { a as objectType, i as enumType, n as arrayType, o as stringType, r as booleanType, t as anyType } from "../_libs/zod.mjs";
+import { d as computeFlags, f as computeND, m as computeScore, p as computePriority, v as isSensitive, y as mockScan } from "./engine-B1qeQA5Y.mjs";
 import { t as createClient } from "../_libs/supabase__supabase-js.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/scan.functions-IwUNYYVP.js
+import nodeHTTP from "node:http";
+import nodeHTTPS from "node:https";
+import dnsPromises from "node:dns/promises";
+import * as fs from "fs";
+import * as path from "path";
+//#region node_modules/.nitro/vite/services/ssr/assets/scan.functions-DWFMepdc.js
 var createServerRpc = (serverFnMeta, splitImportFn) => {
 	const url = "/_serverFn/" + serverFnMeta.id;
 	return Object.assign(splitImportFn, {
@@ -13,6 +18,65 @@ var createServerRpc = (serverFnMeta, splitImportFn) => {
 };
 var DOH = "https://cloudflare-dns.com/dns-query";
 var UA = "ShieldScore/1.0 (+passive-scan)";
+async function fetchDomainBypassingSsl(url, depth = 0) {
+	if (depth > 5) throw new Error("Too many redirects");
+	return new Promise((resolve, reject) => {
+		try {
+			const parsed = new URL(url);
+			const isHttps = parsed.protocol === "https:";
+			const client = isHttps ? nodeHTTPS : nodeHTTP;
+			const options = {
+				hostname: parsed.hostname,
+				port: parsed.port || (isHttps ? 443 : 80),
+				path: parsed.pathname + parsed.search,
+				method: "GET",
+				headers: { "User-Agent": UA },
+				timeout: 1e4
+			};
+			if (isHttps) options.agent = new nodeHTTPS.Agent({ rejectUnauthorized: false });
+			const req = client.request(options, (res) => {
+				if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+					fetchDomainBypassingSsl(new URL(res.headers.location, url).toString(), depth + 1).then(resolve).catch(() => {
+						const headers = new Headers();
+						for (const [key, val] of Object.entries(res.headers)) if (val !== void 0) headers.set(key, Array.isArray(val) ? val.join(", ") : val);
+						resolve({
+							reachable: true,
+							headers,
+							html: "",
+							finalUrl: url
+						});
+					});
+					return;
+				}
+				const headers = new Headers();
+				for (const [key, val] of Object.entries(res.headers)) if (val !== void 0) headers.set(key, Array.isArray(val) ? val.join(", ") : val);
+				let body = "";
+				res.setEncoding("utf8");
+				res.on("data", (chunk) => {
+					if (body.length < 3e5) body += chunk;
+				});
+				res.on("end", () => {
+					resolve({
+						reachable: true,
+						headers,
+						html: body,
+						finalUrl: url
+					});
+				});
+			});
+			req.on("error", (err) => {
+				reject(err);
+			});
+			req.on("timeout", () => {
+				req.destroy();
+				reject(/* @__PURE__ */ new Error("Timeout"));
+			});
+			req.end();
+		} catch (err) {
+			reject(err);
+		}
+	});
+}
 async function dnsQuery(name, type) {
 	try {
 		const res = await fetch(`${DOH}?name=${encodeURIComponent(name)}&type=${type}`, {
@@ -25,7 +89,25 @@ async function dnsQuery(name, type) {
 		return null;
 	}
 }
+async function systemDns(name, type) {
+	try {
+		if (type === "TXT") return (await dnsPromises.resolveTxt(name)).map((r) => r.join(" "));
+		if (type === "A") return await dnsPromises.resolve4(name);
+		if (type === "MX") return (await dnsPromises.resolveMx(name)).map((r) => `${r.priority} ${r.exchange}`);
+		if (type === "CNAME") return await dnsPromises.resolveCname(name);
+		if (type === "NS") return await dnsPromises.resolveNs(name);
+		if (type === "CAA") return (await dnsPromises.resolveCaa(name)).map((r) => `${r.critical ?? r.flag ?? 0} ${r.tag} "${r.value}"`);
+		return [];
+	} catch (err) {
+		if (err.code !== "ENODATA" && err.code !== "ENOTFOUND") console.warn(`System DNS query failed for ${name} (${type}):`, err.message || err);
+		return [];
+	}
+}
 async function dns(name, type) {
+	try {
+		const list = await systemDns(name, type);
+		if (list && list.length > 0) return list;
+	} catch {}
 	return ((await dnsQuery(name, type))?.Answer ?? []).map((a) => a.data.replace(/^"|"$/g, "").replace(/"\s*"/g, ""));
 }
 var DKIM_SELECTORS = [
@@ -255,13 +337,9 @@ async function scanDomain(domain, emails) {
 	let mixedContent = 0;
 	let banner = null;
 	try {
-		const res = await fetch(`https://${domain}/`, {
-			redirect: "follow",
-			headers: { "user-agent": UA },
-			signal: AbortSignal.timeout(1e4)
-		});
+		const res = await fetchDomainBypassingSsl(`https://${domain}/`);
 		reachable = true;
-		https = res.url.startsWith("https://");
+		https = res.finalUrl.startsWith("https://");
 		ssl = "valid";
 		const h = res.headers;
 		for (const [key, label] of [
@@ -278,7 +356,7 @@ async function scanDomain(domain, emails) {
 		const ck = cookieProblems(h);
 		cookieIssues = ck.issues;
 		cookiesChecked = ck.checked;
-		const html = (await res.text().catch(() => "")).slice(0, 3e5);
+		const html = res.html.slice(0, 3e5);
 		tech = detectTech(h, html);
 		mixedContent = (html.match(/(?:src|href)=["']http:\/\/(?!localhost)/gi) ?? []).length;
 	} catch {
@@ -328,6 +406,146 @@ async function scanDomain(domain, emails) {
 		},
 		tech
 	};
+}
+var supabaseUrl = process.env.SUPABASE_URL;
+var supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+var supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+var supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+var supabaseAdminClient = supabaseUrl && (supabaseServiceRoleKey || supabaseAnonKey) ? createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey || "", { auth: { persistSession: false } }) : null;
+var LOCAL_DB_PATH = path.join(process.cwd(), "tmp", "local_db.json");
+function ensureLocalDb() {
+	const dir = path.dirname(LOCAL_DB_PATH);
+	if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+	if (!fs.existsSync(LOCAL_DB_PATH)) fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({
+		submissions: [],
+		settings: null
+	}, null, 2));
+}
+function readLocalDb() {
+	ensureLocalDb();
+	try {
+		return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, "utf-8"));
+	} catch (err) {
+		console.error("Failed to read local fallback DB:", err);
+		return {
+			submissions: [],
+			settings: null
+		};
+	}
+}
+function writeLocalDb(data) {
+	ensureLocalDb();
+	try {
+		fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(data, null, 2));
+	} catch (err) {
+		console.error("Failed to write to local fallback DB:", err);
+	}
+}
+async function saveSubmissionToDb(lead, profile, answers, scan) {
+	const scoreResult = computeScore(profile, answers, scan);
+	const newRecord = {
+		name: lead.name,
+		email: lead.email,
+		business: lead.business || null,
+		phone: lead.phone || null,
+		role: lead.role || null,
+		decision_maker: lead.decisionMaker,
+		consent: lead.consent,
+		score: scoreResult.final,
+		scan_result: scan,
+		answers,
+		profile,
+		created_at: (/* @__PURE__ */ new Date()).toISOString()
+	};
+	const clientToUse = supabaseAdminClient || supabase;
+	if (clientToUse) try {
+		console.log(`Saving submission in Supabase for ${lead.email}...`);
+		const { data, error } = await clientToUse.from("submissions").insert(newRecord).select();
+		if (error) throw error;
+		console.log("Successfully saved submission to Supabase.");
+		return data;
+	} catch (err) {
+		console.warn("Supabase insertion failed. Falling back to local file database. Error:", err);
+	}
+	else console.warn("Supabase client not initialized. Falling back to local file database.");
+	const db = readLocalDb();
+	db.submissions = db.submissions.filter((s) => s.email !== lead.email);
+	db.submissions.unshift(newRecord);
+	writeLocalDb(db);
+	console.log("Successfully saved submission to local fallback database file.");
+	return [newRecord];
+}
+async function getSubmissions() {
+	let remoteSubmissions = [];
+	if (supabaseAdminClient) try {
+		const { data, error } = await supabaseAdminClient.from("submissions").select("*").neq("email", "_settings@shield-identity.local").order("created_at", { ascending: false });
+		if (error) throw error;
+		if (data) remoteSubmissions = data;
+	} catch (err) {
+		console.warn("Could not fetch submissions from Supabase remote DB, returning cached data. Reason:", err.message || err);
+	}
+	const db = readLocalDb();
+	const merged = [...remoteSubmissions];
+	const remoteEmails = new Set(remoteSubmissions.map((s) => s.email));
+	for (const localSub of db.submissions) if (!remoteEmails.has(localSub.email)) merged.push(localSub);
+	return merged.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+}
+async function deleteSubmission(email) {
+	const db = readLocalDb();
+	db.submissions = db.submissions.filter((s) => s.email !== email);
+	writeLocalDb(db);
+	console.log(`Deleted submission for ${email} from local database.`);
+	if (supabaseAdminClient) try {
+		const { error } = await supabaseAdminClient.from("submissions").delete().eq("email", email);
+		if (error) throw error;
+		console.log(`Deleted remote submission for ${email} in Supabase.`);
+	} catch (err) {
+		console.warn("Could not delete from remote Supabase table:", err);
+	}
+	return { success: true };
+}
+async function getGlobalSettings() {
+	if (supabaseAdminClient) try {
+		const { data, error } = await supabaseAdminClient.from("submissions").select("answers").eq("email", "_settings@shield-identity.local").maybeSingle();
+		if (error) throw error;
+		if (data?.answers) return data.answers;
+	} catch (err) {
+		console.log("Could not load global settings from Supabase, loading from local cache. Reason:", err.message || err);
+	}
+	return readLocalDb().settings;
+}
+async function saveGlobalSettings(settings) {
+	const db = readLocalDb();
+	db.settings = settings;
+	writeLocalDb(db);
+	console.log("Global settings saved to local database file.");
+	if (supabaseAdminClient) try {
+		const { data: existing, error: checkError } = await supabaseAdminClient.from("submissions").select("email").eq("email", "_settings@shield-identity.local").maybeSingle();
+		if (checkError) throw checkError;
+		const payload = {
+			email: "_settings@shield-identity.local",
+			name: "Global Settings",
+			business: "Shield Score System",
+			phone: "0000000000",
+			role: "System Admin",
+			decision_maker: "Yes, I decide",
+			consent: true,
+			score: 100,
+			answers: settings,
+			profile: {},
+			scan_result: {}
+		};
+		let query;
+		if (existing) query = supabaseAdminClient.from("submissions").update(payload).eq("email", "_settings@shield-identity.local");
+		else query = supabaseAdminClient.from("submissions").insert(payload);
+		const { data, error } = await query.select();
+		if (error) throw error;
+		console.log("Successfully saved settings to remote Supabase DB.");
+		return data;
+	} catch (err) {
+		console.warn("Could not save settings to remote Supabase DB. Saved locally instead. Reason:", err.message || err);
+	}
+	return [settings];
 }
 var cachedToken = null;
 var tokenExpiresAt = 0;
@@ -423,51 +641,32 @@ async function createZohoLead(lead, profile, answers, scan) {
 	console.log(`Successfully created Zoho Lead. ID: ${result?.data?.[0]?.details?.id || "unknown"}`);
 	return result;
 }
-var supabaseUrl = process.env.SUPABASE_URL;
-var supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-var supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
-async function saveSubmissionToDb(lead, profile, answers, scan) {
-	if (!supabase) {
-		console.warn("Supabase client is not initialized because variables are missing in configuration.");
-		return null;
-	}
-	const scoreResult = computeScore(profile, answers, scan);
-	console.log(`Saving submission in Supabase for ${lead.email}...`);
-	const { data, error } = await supabase.from("submissions").insert({
-		name: lead.name,
-		email: lead.email,
-		business: lead.business || null,
-		phone: lead.phone || null,
-		role: lead.role || null,
-		decision_maker: lead.decisionMaker,
-		consent: lead.consent,
-		score: scoreResult.final,
-		scan_result: scan,
-		answers,
-		profile
-	}).select();
-	if (error) {
-		console.error("Error inserting submission to Supabase:", error);
-		throw error;
-	}
-	console.log("Successfully saved submission to Supabase.");
-	return data;
-}
 var runScan_createServerFn_handler = createServerRpc({
 	id: "ad940233a7c2d0ace956d672c49a239de172d3560a825a8e562ab161369076d0",
 	name: "runScan",
 	filename: "src/lib/assessment/scan.functions.ts"
 }, (opts) => runScan.__executeServer(opts));
-var runScan = createServerFn({ method: "POST" }).inputValidator((data) => objectType({
+var runScan = createServerFn({ method: "POST" }).validator((data) => objectType({
 	domain: stringType().min(3),
 	emails: arrayType(stringType()).default([])
-}).parse(data)).handler(runScan_createServerFn_handler, async ({ data }) => scanDomain(data.domain, data.emails));
+}).parse(data)).handler(runScan_createServerFn_handler, async ({ data }) => {
+	try {
+		const settings = await getGlobalSettings();
+		if (settings && settings.scanMode === "mock") {
+			console.log(`[Scan Engine] Running simulated MOCK scan for domain: ${data.domain}`);
+			return mockScan(data.domain, data.emails);
+		}
+	} catch (err) {
+		console.warn("Error checking scan settings, falling back to authentic scan:", err);
+	}
+	return scanDomain(data.domain, data.emails);
+});
 var runBreachCheck_createServerFn_handler = createServerRpc({
 	id: "137eb6da1c2bb411071b447657c3ca0b01fb27723c9aceee5344950ea628ef54",
 	name: "runBreachCheck",
 	filename: "src/lib/assessment/scan.functions.ts"
 }, (opts) => runBreachCheck.__executeServer(opts));
-var runBreachCheck = createServerFn({ method: "POST" }).inputValidator((data) => objectType({ email: stringType().email() }).parse(data)).handler(runBreachCheck_createServerFn_handler, async ({ data }) => {
+var runBreachCheck = createServerFn({ method: "POST" }).validator((data) => objectType({ email: stringType().email() }).parse(data)).handler(runBreachCheck_createServerFn_handler, async ({ data }) => {
 	const breaches = await fetchEmailBreaches(data.email);
 	return {
 		count: breaches.length,
@@ -480,7 +679,7 @@ var submitToCrm_createServerFn_handler = createServerRpc({
 	name: "submitToCrm",
 	filename: "src/lib/assessment/scan.functions.ts"
 }, (opts) => submitToCrm.__executeServer(opts));
-var submitToCrm = createServerFn({ method: "POST" }).inputValidator((data) => objectType({
+var submitToCrm = createServerFn({ method: "POST" }).validator((data) => objectType({
 	lead: anyType(),
 	profile: anyType(),
 	answers: anyType(),
@@ -490,17 +689,31 @@ var submitToCrm = createServerFn({ method: "POST" }).inputValidator((data) => ob
 	let crmSuccess = false;
 	let dbResult = null;
 	let crmResult = null;
+	let isCrmSyncEnabled = true;
+	try {
+		const settings = await getGlobalSettings();
+		if (settings && settings.zohoEnabled === false) isCrmSyncEnabled = false;
+	} catch (err) {
+		console.warn("Could not check settings for Zoho status, defaulting to enabled:", err);
+	}
 	try {
 		dbResult = await saveSubmissionToDb(data.lead, data.profile, data.answers, data.scan);
 		dbSuccess = true;
 	} catch (dbError) {
 		console.error("Failed to save submission to Supabase:", dbError);
 	}
-	try {
+	if (isCrmSyncEnabled) try {
 		crmResult = await createZohoLead(data.lead, data.profile, data.answers, data.scan);
 		crmSuccess = true;
 	} catch (crmError) {
 		console.error("Failed to sync lead to Zoho CRM:", crmError);
+	}
+	else {
+		console.log("Zoho CRM sync skipped because it is disabled in global settings.");
+		crmResult = {
+			status: "skipped",
+			message: "CRM Sync disabled in system settings"
+		};
 	}
 	return {
 		db: {
@@ -513,5 +726,66 @@ var submitToCrm = createServerFn({ method: "POST" }).inputValidator((data) => ob
 		}
 	};
 });
+var getAdminSettings_createServerFn_handler = createServerRpc({
+	id: "0e5ce2c2379f46651d1689363e13062dc53a8d8a3510279ce290c4ac8ec52e2c",
+	name: "getAdminSettings",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => getAdminSettings.__executeServer(opts));
+var getAdminSettings = createServerFn({ method: "GET" }).handler(getAdminSettings_createServerFn_handler, async () => {
+	try {
+		return await getGlobalSettings() || {
+			calendlyUrl: "https://shield-identity.com/contact",
+			zohoEnabled: true,
+			scanMode: "authentic"
+		};
+	} catch (err) {
+		console.error("Failed to load settings server-side, returning defaults:", err);
+		return {
+			calendlyUrl: "https://shield-identity.com/contact",
+			zohoEnabled: true,
+			scanMode: "authentic"
+		};
+	}
+});
+var saveAdminSettings_createServerFn_handler = createServerRpc({
+	id: "d2d8ec452e6ddeed8030f790214ec130168c0286abc060f78f21b7cf7ee1ef20",
+	name: "saveAdminSettings",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => saveAdminSettings.__executeServer(opts));
+var saveAdminSettings = createServerFn({ method: "POST" }).validator((data) => objectType({
+	password: stringType(),
+	settings: objectType({
+		calendlyUrl: stringType().url(),
+		zohoEnabled: booleanType(),
+		scanMode: enumType(["authentic", "mock"])
+	})
+}).parse(data)).handler(saveAdminSettings_createServerFn_handler, async ({ data }) => {
+	const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+	if (data.password !== expectedPassword) throw new Error("Unauthorized: Invalid password");
+	return saveGlobalSettings(data.settings);
+});
+var getSubmissionsList_createServerFn_handler = createServerRpc({
+	id: "307b6fee2df828a49966abc4bd4192e2f2e0882307bde0bb563b35183d4c6050",
+	name: "getSubmissionsList",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => getSubmissionsList.__executeServer(opts));
+var getSubmissionsList = createServerFn({ method: "POST" }).validator((data) => objectType({ password: stringType() }).parse(data)).handler(getSubmissionsList_createServerFn_handler, async ({ data }) => {
+	const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+	if (data.password !== expectedPassword) throw new Error("Unauthorized: Invalid password");
+	return getSubmissions();
+});
+var deleteSubmissionRecord_createServerFn_handler = createServerRpc({
+	id: "0ee3879f33d0346abaf75b01d1eb8cb265a666fb1e26ea0414c654a7562bd714",
+	name: "deleteSubmissionRecord",
+	filename: "src/lib/assessment/scan.functions.ts"
+}, (opts) => deleteSubmissionRecord.__executeServer(opts));
+var deleteSubmissionRecord = createServerFn({ method: "POST" }).validator((data) => objectType({
+	password: stringType(),
+	email: stringType()
+}).parse(data)).handler(deleteSubmissionRecord_createServerFn_handler, async ({ data }) => {
+	const expectedPassword = process.env.ADMIN_PASSWORD || "shield-admin-2026";
+	if (data.password !== expectedPassword) throw new Error("Unauthorized: Invalid password");
+	return deleteSubmission(data.email);
+});
 //#endregion
-export { runBreachCheck_createServerFn_handler, runScan_createServerFn_handler, submitToCrm_createServerFn_handler };
+export { deleteSubmissionRecord_createServerFn_handler, getAdminSettings_createServerFn_handler, getSubmissionsList_createServerFn_handler, runBreachCheck_createServerFn_handler, runScan_createServerFn_handler, saveAdminSettings_createServerFn_handler, submitToCrm_createServerFn_handler };

@@ -1,5 +1,15 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Globe, Lock, Mail, ShieldCheck, MapPin, ServerOff } from "lucide-react";
+import {
+  ArrowRight,
+  Globe,
+  Lock,
+  Mail,
+  ShieldCheck,
+  MapPin,
+  ServerOff,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { useState } from "react";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { useAssessment } from "@/lib/assessment/store";
@@ -166,16 +176,6 @@ function HeroPreview() {
           </div>
           <div className="mt-1 text-2xl font-semibold">Acme Corp</div>
         </div>
-        <div
-          className="rounded-full px-3 py-1 text-xs"
-          style={{
-            background: "color-mix(in oklab, var(--warning) 20%, transparent)",
-            color: "var(--warning)",
-            border: "1px solid color-mix(in oklab, var(--warning) 40%, transparent)",
-          }}
-        >
-          Developing
-        </div>
       </div>
 
       <div className="relative mx-auto mt-6 flex h-52 w-52 items-center justify-center">
@@ -225,12 +225,15 @@ function HeroPreview() {
             className="flex items-center justify-between rounded-lg bg-ink/5 px-3 py-2 text-sm"
           >
             <span>{r.label}</span>
-            <span
-              className="text-xs font-semibold"
-              style={{ color: r.ok ? "var(--success)" : "var(--danger)" }}
-            >
-              {r.ok ? "PASS" : "FAIL"}
-            </span>
+            {r.ok ? (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-[color:var(--success)]">
+                <CheckCircle2 size={13} /> Secure
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-[color:var(--danger)]">
+                <AlertCircle size={13} /> Gap Detected
+              </span>
+            )}
           </motion.div>
         ))}
       </div>
