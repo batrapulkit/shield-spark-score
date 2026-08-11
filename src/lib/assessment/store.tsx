@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, useEffect, type ReactNode } from "react";
 import type { Answers, Lead, Phase, Profile, ScanResult } from "./types";
+import { QUICK_QUESTIONS, DEEP_QUESTIONS, type QuestionDef } from "./data";
 
 interface State {
   phase: Phase;
@@ -13,6 +14,9 @@ interface State {
   lead: Lead | null;
   deepMode: boolean;
   calendlyUrl: string;
+  resourcesUrl: string;
+  quickQuestions: QuestionDef[];
+  deepQuestions: QuestionDef[];
 }
 
 interface Ctx extends State {
@@ -27,6 +31,9 @@ interface Ctx extends State {
   setLead: (l: Lead) => void;
   setDeepMode: (v: boolean) => void;
   setCalendlyUrl: (v: string) => void;
+  setResourcesUrl: (v: string) => void;
+  setQuickQuestions: (v: QuestionDef[]) => void;
+  setDeepQuestions: (v: QuestionDef[]) => void;
   reset: () => void;
 }
 
@@ -44,23 +51,30 @@ const initial: State = {
   lead: null,
   deepMode: false,
   calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
+  resourcesUrl: "https://shield-identity.com/resources",
+  quickQuestions: QUICK_QUESTIONS,
+  deepQuestions: DEEP_QUESTIONS,
 };
 
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(initial);
 
-  // Fetch admin settings for Calendly booking link on mount
+  // Fetch admin settings for dynamic config on mount
   useEffect(() => {
     import("./scan.functions")
       .then(({ getAdminSettings }) => {
         getAdminSettings()
           .then((settings) => {
-            if (settings?.calendlyUrl) {
-              setState((s) => ({ ...s, calendlyUrl: settings.calendlyUrl }));
-            }
+            setState((s) => ({
+              ...s,
+              calendlyUrl: settings?.calendlyUrl || s.calendlyUrl,
+              resourcesUrl: settings?.resourcesUrl || s.resourcesUrl,
+              quickQuestions: settings?.quickQuestions || s.quickQuestions,
+              deepQuestions: settings?.deepQuestions || s.deepQuestions,
+            }));
           })
           .catch((err) => {
-            console.warn("Could not load configured Calendly URL on mount, sticking with default:", err);
+            console.warn("Could not load configured settings on mount, sticking with defaults:", err);
           });
       })
       .catch((err) => {
@@ -83,6 +97,9 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       setLead: (l) => setState((s) => ({ ...s, lead: l })),
       setDeepMode: (v) => setState((s) => ({ ...s, deepMode: v })),
       setCalendlyUrl: (v) => setState((s) => ({ ...s, calendlyUrl: v })),
+      setResourcesUrl: (v) => setState((s) => ({ ...s, resourcesUrl: v })),
+      setQuickQuestions: (v) => setState((s) => ({ ...s, quickQuestions: v })),
+      setDeepQuestions: (v) => setState((s) => ({ ...s, deepQuestions: v })),
       reset: () => setState(initial),
     }),
     [state],

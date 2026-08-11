@@ -8,17 +8,33 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const supabase = (supabaseUrl && supabaseAnonKey)
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null;
+function isValidUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function initSupabaseClient(url: string | undefined, key: string | undefined, options?: any) {
+  if (!isValidUrl(url) || !key) return null;
+  try {
+    return createClient(url!, key, options);
+  } catch (err) {
+    console.error("Failed to initialize Supabase client:", err);
+    return null;
+  }
+}
+
+export const supabase = initSupabaseClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client that uses the service role key to bypass RLS policies if configured
-const adminKeyToUse = supabaseServiceRoleKey || supabaseAnonKey || "";
-export const supabaseAdminClient = (supabaseUrl && (supabaseServiceRoleKey || supabaseAnonKey))
-  ? createClient(supabaseUrl, adminKeyToUse, {
-      auth: { persistSession: false }
-    })
-  : null;
+const adminKeyToUse = supabaseServiceRoleKey || supabaseAnonKey;
+export const supabaseAdminClient = initSupabaseClient(supabaseUrl, adminKeyToUse, {
+  auth: { persistSession: false }
+});
 
 // LOCAL FILE FALLBACK DB CACHE (Avoids RLS blocks and database configuration blockers in dev/demos)
 const LOCAL_DB_PATH = process.env.VERCEL
@@ -59,8 +75,10 @@ export async function saveSubmissionToDb(
   profile: Profile,
   answers: Answers,
   scan: ScanResult | null,
+  customQuick?: any[],
+  customDeep?: any[]
 ) {
-  const scoreResult = computeScore(profile, answers, scan);
+  const scoreResult = computeScore(profile, answers, scan, customQuick, customDeep);
   const newRecord = {
     name: lead.name,
     email: lead.email,

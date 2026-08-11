@@ -4,9 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { OptionCard } from "@/components/shield/OptionCard";
 import {
-  DEEP_QUESTIONS,
   INDUSTRY_META,
-  QUICK_QUESTIONS,
   type QuestionDef,
 } from "@/lib/assessment/data";
 import { extractDomain } from "@/lib/assessment/scan";
@@ -34,12 +32,12 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
 
   const queue = useMemo<QuestionDef[]>(() => {
     if (currentMode === "quick") {
-      let q = [...QUICK_QUESTIONS];
+      let q = [...s.quickQuestions];
       if (s.profile.size === "Just me (no staff)") q = q.filter((x) => x.id !== "train");
       return q;
     }
     // deep queue
-    let deep = [...DEEP_QUESTIONS];
+    let deep = [...s.deepQuestions];
     // industryData first if industry has one
     if (s.profile.industry && INDUSTRY_META[s.profile.industry]) {
       const meta = INDUSTRY_META[s.profile.industry];

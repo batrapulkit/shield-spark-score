@@ -3,9 +3,16 @@ import type { Answers, DecisionMaker, Profile, ScanResult } from "./types";
 
 // ---- helpers ----
 
-export function answerValue(qid: keyof Answers, answer: string | undefined): number | null {
+export function answerValue(
+  qid: keyof Answers,
+  answer: string | undefined,
+  customQuick?: QuestionDef[],
+  customDeep?: QuestionDef[]
+): number | null {
   if (answer == null) return null;
-  const q = [...QUICK_QUESTIONS, ...DEEP_QUESTIONS].find((x) => x.id === qid);
+  const quickPool = customQuick || QUICK_QUESTIONS;
+  const deepPool = customDeep || DEEP_QUESTIONS;
+  const q = [...quickPool, ...deepPool].find((x) => x.id === qid);
   if (!q) return null;
   const opt = q.options.find((o) => o.label === answer);
   return opt ? opt.value : null;
@@ -64,8 +71,13 @@ export function computeScore(
   profile: Profile,
   answers: Answers,
   scan: ScanResult | null,
+  customQuick?: QuestionDef[],
+  customDeep?: QuestionDef[]
 ): ScoreBreakdown {
-  const all: QuestionDef[] = [...QUICK_QUESTIONS, ...DEEP_QUESTIONS];
+  const all: QuestionDef[] = [
+    ...(customQuick || QUICK_QUESTIONS),
+    ...(customDeep || DEEP_QUESTIONS),
+  ];
   let numerator = 0;
   let denominator = 0;
   for (const q of all) {
@@ -74,7 +86,12 @@ export function computeScore(
     if (q.id === "train" && isSolo(profile)) continue;
     if (q.id === "accessoff" && isSolo(profile)) continue;
     if (q.id === "airules" && answers.aiuse === "No") continue;
-    const v = answerValue(q.id, (answers as Record<string, string | undefined>)[q.id]);
+    const v = answerValue(
+      q.id,
+      (answers as Record<string, string | undefined>)[q.id],
+      customQuick,
+      customDeep
+    );
     if (v == null) continue;
     numerator += v * q.weight;
     denominator += q.weight;
@@ -147,9 +164,11 @@ export function computeFlags(
   profile: Profile,
   answers: Answers,
   scan: ScanResult | null,
+  customQuick?: QuestionDef[],
+  customDeep?: QuestionDef[]
 ): Flags {
   const av = (id: keyof Answers) =>
-    answerValue(id, (answers as Record<string, string | undefined>)[id]);
+    answerValue(id, (answers as Record<string, string | undefined>)[id], customQuick, customDeep);
   const answered = (id: keyof Answers) =>
     (answers as Record<string, string | undefined>)[id] != null;
 
@@ -640,9 +659,14 @@ export function computePriority(
 
 // ---- Category subscores for dashboard ----
 
-export function categorySubscores(profile: Profile, answers: Answers) {
+export function categorySubscores(
+  profile: Profile,
+  answers: Answers,
+  customQuick?: QuestionDef[],
+  customDeep?: QuestionDef[]
+) {
   const av = (id: keyof Answers) =>
-    answerValue(id, (answers as Record<string, string | undefined>)[id]);
+    answerValue(id, (answers as Record<string, string | undefined>)[id], customQuick, customDeep);
   const pct = (vals: (number | null)[]) => {
     const filtered = vals.filter((v): v is number => v != null);
     if (!filtered.length) return null;

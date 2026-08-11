@@ -65,17 +65,30 @@ export const submitToCrm = createServerFn({ method: "POST" })
     
     // Check if CRM integration is toggled globally
     let isCrmSyncEnabled = true;
+    let customQuick: any[] | undefined = undefined;
+    let customDeep: any[] | undefined = undefined;
     try {
       const settings = await getGlobalSettings();
-      if (settings && settings.zohoEnabled === false) {
-        isCrmSyncEnabled = false;
+      if (settings) {
+        if (settings.zohoEnabled === false) {
+          isCrmSyncEnabled = false;
+        }
+        customQuick = settings.quickQuestions;
+        customDeep = settings.deepQuestions;
       }
     } catch (err) {
-      console.warn("Could not check settings for Zoho status, defaulting to enabled:", err);
+      console.warn("Could not check settings for Zoho/Custom questions, defaulting:", err);
     }
 
     try {
-      dbResult = await saveSubmissionToDb(data.lead, data.profile, data.answers, data.scan);
+      dbResult = await saveSubmissionToDb(
+        data.lead,
+        data.profile,
+        data.answers,
+        data.scan,
+        customQuick,
+        customDeep
+      );
       dbSuccess = true;
     } catch (dbError) {
       console.error("Failed to save submission to Supabase:", dbError);
@@ -83,7 +96,14 @@ export const submitToCrm = createServerFn({ method: "POST" })
 
     if (isCrmSyncEnabled) {
       try {
-        crmResult = await createZohoLead(data.lead, data.profile, data.answers, data.scan);
+        crmResult = await createZohoLead(
+          data.lead,
+          data.profile,
+          data.answers,
+          data.scan,
+          customQuick,
+          customDeep
+        );
         crmSuccess = true;
       } catch (crmError) {
         console.error("Failed to sync lead to Zoho CRM:", crmError);
@@ -104,17 +124,33 @@ export const getAdminSettings = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
       const settings = await getGlobalSettings();
-      return settings || {
+      if (settings) {
+        return {
+          calendlyUrl: settings.calendlyUrl || "https://shield-identity.com/contact",
+          resourcesUrl: settings.resourcesUrl || "https://shield-identity.com/resources",
+          zohoEnabled: settings.zohoEnabled ?? true,
+          scanMode: settings.scanMode || "authentic",
+          quickQuestions: settings.quickQuestions,
+          deepQuestions: settings.deepQuestions,
+        };
+      }
+      return {
         calendlyUrl: "https://shield-identity.com/contact",
+        resourcesUrl: "https://shield-identity.com/resources",
         zohoEnabled: true,
-        scanMode: "authentic"
+        scanMode: "authentic",
+        quickQuestions: undefined,
+        deepQuestions: undefined,
       };
     } catch (err) {
       console.error("Failed to load settings server-side, returning defaults:", err);
       return {
         calendlyUrl: "https://shield-identity.com/contact",
+        resourcesUrl: "https://shield-identity.com/resources",
         zohoEnabled: true,
-        scanMode: "authentic"
+        scanMode: "authentic",
+        quickQuestions: undefined,
+        deepQuestions: undefined,
       };
     }
   });
@@ -126,8 +162,11 @@ export const saveAdminSettings = createServerFn({ method: "POST" })
         password: z.string(),
         settings: z.object({
           calendlyUrl: z.string().url(),
+          resourcesUrl: z.string().url().optional(),
           zohoEnabled: z.boolean(),
-          scanMode: z.enum(["authentic", "mock"])
+          scanMode: z.enum(["authentic", "mock"]),
+          quickQuestions: z.array(z.any()).optional(),
+          deepQuestions: z.array(z.any()).optional(),
         })
       })
       .parse(data),

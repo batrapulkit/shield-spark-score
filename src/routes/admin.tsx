@@ -44,13 +44,22 @@ function AdminPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Navigation
+  const [activeTab, setActiveTab] = useState<"submissions" | "settings" | "questions">("submissions");
+
   // System states
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     calendlyUrl: "https://shield-identity.com/contact",
+    resourcesUrl: "https://shield-identity.com/resources",
     zohoEnabled: true,
     scanMode: "authentic" as "authentic" | "mock",
   });
+  
+  const [quickQArray, setQuickQArray] = useState<any[]>([]);
+  const [deepQArray, setDeepQArray] = useState<any[]>([]);
+  const [selectedEditQ, setSelectedEditQ] = useState<any | null>(null);
+  
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "success" | "error">("idle");
   
   // Table search and filters
@@ -80,9 +89,19 @@ function AdminPage() {
       const config = await getAdminSettings();
       setSettings({
         calendlyUrl: config.calendlyUrl || "https://shield-identity.com/contact",
+        resourcesUrl: config.resourcesUrl || "https://shield-identity.com/resources",
         zohoEnabled: config.zohoEnabled ?? true,
         scanMode: (config.scanMode as "authentic" | "mock") || "authentic",
       });
+
+      // Load static defaults if settings do not contain custom questions yet
+      const { QUICK_QUESTIONS, DEEP_QUESTIONS } = await import("@/lib/assessment/data");
+      setQuickQArray(config.quickQuestions || QUICK_QUESTIONS);
+      setDeepQArray(config.deepQuestions || DEEP_QUESTIONS);
+
+      // Select first question by default for workspace area
+      const initialQ = config.quickQuestions?.[0] || QUICK_QUESTIONS[0];
+      setSelectedEditQ(initialQ);
 
       setIsLoggedIn(true);
       setPassword(pass);
@@ -106,6 +125,9 @@ function AdminPage() {
     setPassword("");
     sessionStorage.removeItem("shield_admin_pass");
     setSubmissions([]);
+    setQuickQArray([]);
+    setDeepQArray([]);
+    setSelectedEditQ(null);
   };
 
   const handleSaveSettings = async () => {
@@ -114,7 +136,11 @@ function AdminPage() {
       await saveAdminSettings({
         data: {
           password,
-          settings,
+          settings: {
+            ...settings,
+            quickQuestions: quickQArray,
+            deepQuestions: deepQArray,
+          },
         },
       });
       setSaveStatus("success");
@@ -124,6 +150,81 @@ function AdminPage() {
       setSaveStatus("error");
       setTimeout(() => setSaveStatus("idle"), 4000);
     }
+  };
+
+  const handleResetToDefaults = async () => {
+    if (!window.confirm("Are you sure you want to restore all question text, weights, explainers, and answer options back to their system defaults? This will overwrite your active configuration choices.")) {
+      return;
+    }
+    try {
+      const { QUICK_QUESTIONS, DEEP_QUESTIONS } = await import("@/lib/assessment/data");
+      setQuickQArray(QUICK_QUESTIONS);
+      setDeepQArray(DEEP_QUESTIONS);
+      
+      // Update selected editor views
+      if (selectedEditQ) {
+        const matchingDefault = [...QUICK_QUESTIONS, ...DEEP_QUESTIONS].find(
+          (q) => q.id === selectedEditQ.id
+        );
+        if (matchingDefault) {
+          setSelectedEditQ(matchingDefault);
+        }
+      }
+      
+      alert("Reset complete! Click 'Save Changes' to commit default parameters back to Supabase.");
+    } catch (err) {
+      console.error("Failed to load schema defaults:", err);
+    }
+  };
+
+  const updateQuestionField = (qid: string, field: string, value: any) => {
+    const isQuick = quickQArray.some((q) => q.id === qid);
+    if (isQuick) {
+      setQuickQArray((prev) =>
+        prev.map((q) => (q.id === qid ? { ...q, [field]: value } : q))
+      );
+    } else {
+      setDeepQArray((prev) =>
+        prev.map((q) => (q.id === qid ? { ...q, [field]: value } : q))
+      );
+    }
+    // Keep sidebar and workspace detail elements in sync
+    setSelectedEditQ((prev: any) => {
+      if (prev && prev.id === qid) {
+        return { ...prev, [field]: value };
+      }
+      return prev;
+    });
+  };
+
+  const updateOptionField = (qid: string, idx: number, optField: "label" | "value", value: any) => {
+    const isQuick = quickQArray.some((q) => q.id === qid);
+    const updateOptions = (options: any[]) =>
+      options.map((opt, i) => {
+        if (i === idx) {
+          // Parse score number values; else leave label strings intact
+          const val = optField === "value" ? (value === "" ? 0 : parseFloat(value)) : value;
+          return { ...opt, [optField]: val };
+        }
+        return opt;
+      });
+
+    if (isQuick) {
+      setQuickQArray((prev) =>
+        prev.map((q) => (q.id === qid ? { ...q, options: updateOptions(q.options) } : q))
+      );
+    } else {
+      setDeepQArray((prev) =>
+        prev.map((q) => (q.id === qid ? { ...q, options: updateOptions(q.options) } : q))
+      );
+    }
+    
+    setSelectedEditQ((prev: any) => {
+      if (prev && prev.id === qid) {
+        return { ...prev, options: updateOptions(prev.options) };
+      }
+      return prev;
+    });
   };
 
   const handleDelete = async (email: string) => {
@@ -312,9 +413,34 @@ function AdminPage() {
         ))}
       </div>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-3">
-        {/* Left 2 Columns: Table */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Tabs Navigation */}
+      <div className="mt-8 flex border-b border-ink/10 overflow-x-auto space-x-1 sm:space-x-2 scrollbar-none">
+        {[
+          { id: "submissions", label: "Leads & Submissions", icon: Database },
+          { id: "settings", label: "Global Settings & Links", icon: Link2 },
+          { id: "questions", label: "Questions & Answers Editor", icon: Cpu },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center gap-2 px-5 py-3 border-b-2 text-sm font-semibold tracking-wide transition-all duration-300 shrink-0 ${
+                activeTab === tab.id
+                  ? "border-[color:var(--cyan)] text-[color:var(--cyan-glow)] bg-[color:var(--cyan)]/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-ink/5"
+              }`}
+            >
+              <Icon size={15} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-6">
+        {/* Tab 1: Submissions */}
+        {activeTab === "submissions" && (
           <div className="glass rounded-3xl p-6">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -430,20 +556,20 @@ function AdminPage() {
               )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Right Column: Settings */}
-        <div className="space-y-6">
-          <div className="glass rounded-3xl p-6">
+        {/* Tab 2: Global Configuration */}
+        {activeTab === "settings" && (
+          <div className="glass rounded-3xl p-6 max-w-2xl">
             <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2 mb-6">
               <Link2 size={18} className="text-muted-foreground" />
-              Global Settings
+              Global Settings & URLs
             </h2>
 
-            <div className="space-y-5">
+            <div className="space-y-6">
               {/* Calendly LINK */}
               <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-widest pl-1 mb-2">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-2">
                   Calendly Booking Link
                 </label>
                 <div className="glass rounded-2xl p-2 flex items-center">
@@ -457,12 +583,32 @@ function AdminPage() {
                   />
                 </div>
                 <p className="mt-1.5 text-[11px] text-muted-foreground pl-1">
-                  Updates all "Schedule" and "Book Consultation" CTA URLs dynamically.
+                  Updates all "Schedule" and "Book Consultation" CTA booking links dynamically.
+                </p>
+              </div>
+
+              {/* Resources Directory LINK */}
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-2">
+                  DIY Resources Directory Link
+                </label>
+                <div className="glass rounded-2xl p-2 flex items-center">
+                  <Link2 size={16} className="text-muted-foreground mx-2 shrink-0" />
+                  <input
+                    type="text"
+                    value={settings.resourcesUrl}
+                    onChange={(e) => setSettings({ ...settings, resourcesUrl: e.target.value })}
+                    placeholder="https://shield-identity.com/resources"
+                    className="w-full bg-transparent text-sm text-foreground focus:outline-none"
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px] text-muted-foreground pl-1">
+                  Updates all DIY Guide step-by-step checklist redirect links dynamically.
                 </p>
               </div>
 
               {/* ZOHO TOGGLE */}
-              <div className="border-t border-ink/10 pt-4">
+              <div className="border-t border-ink/10 pt-5">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-sm font-semibold text-foreground flex items-center gap-2">
@@ -486,8 +632,8 @@ function AdminPage() {
               </div>
 
               {/* SCAN MODE */}
-              <div className="border-t border-ink/10 pt-4">
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-widest pl-1 mb-2">
+              <div className="border-t border-ink/10 pt-5">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-widest pl-1 mb-2">
                   Scanning Engine Mode
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -513,11 +659,11 @@ function AdminPage() {
               </div>
 
               {/* Action */}
-              <div className="border-t border-ink/10 pt-5">
+              <div className="border-t border-ink/10 pt-6">
                 <button
                   onClick={handleSaveSettings}
                   disabled={saveStatus === "saving"}
-                  className="w-full inline-flex justify-center items-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-primary-foreground transition-all"
+                  className="w-full inline-flex justify-center items-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold text-primary-foreground transition-all"
                   style={{
                     background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
                   }}
@@ -530,7 +676,209 @@ function AdminPage() {
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Tab 3: Questions & Answers Editor */}
+        {activeTab === "questions" && (
+          <div className="glass rounded-3xl p-6">
+            <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 mb-6 border-b border-ink/10 pb-4">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                  <Cpu size={18} className="text-muted-foreground" />
+                  Questions & Answers Editor
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click a question from the list below to edit its text, description explainer, weight, option labels, and values.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleResetToDefaults}
+                  className="inline-flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 px-4 py-2 text-xs font-semibold text-destructive transition-all hover:bg-destructive/20"
+                >
+                  <RotateCcw size={13} /> Reset to System Defaults
+                </button>
+
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={saveStatus === "saving"}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2 text-xs font-bold text-primary-foreground transition-all hover:scale-102 disabled:opacity-40"
+                  style={{
+                    background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
+                  }}
+                >
+                  {saveStatus === "saving" ? "Saving..." : saveStatus === "success" ? "Saved!" : "Save Changes"}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-[1fr_1.8fr]">
+              {/* Question list selection sidebar */}
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+                {/* Quick Assessment category */}
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                    Big Six (Quick Assessment)
+                  </div>
+                  <div className="space-y-1">
+                    {quickQArray.map((q) => (
+                      <button
+                        key={q.id}
+                        onClick={() => setSelectedEditQ(q)}
+                        className={`w-full text-left p-3 rounded-xl transition-all border ${
+                          selectedEditQ?.id === q.id
+                            ? "bg-[color:var(--cyan)]/10 border-[color:var(--cyan)] text-foreground"
+                            : "bg-ink/5 border-transparent text-muted-foreground hover:bg-ink/10 hover:text-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold uppercase text-[color:var(--cyan)]">{q.id}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">Weight: {q.weight}</span>
+                        </div>
+                        <div className="text-xs font-semibold mt-1 truncate">{q.question}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Deep Dive category */}
+                <div className="pt-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                    Optional Deep-Dive Questions
+                  </div>
+                  <div className="space-y-1">
+                    {deepQArray.map((q) => (
+                      <button
+                        key={q.id}
+                        onClick={() => setSelectedEditQ(q)}
+                        className={`w-full text-left p-3 rounded-xl transition-all border ${
+                          selectedEditQ?.id === q.id
+                            ? "bg-[color:var(--cyan)]/10 border-[color:var(--cyan)] text-foreground"
+                            : "bg-ink/5 border-transparent text-muted-foreground hover:bg-ink/10 hover:text-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono font-bold uppercase text-[color:var(--cyan)]">{q.id}</span>
+                          <span className="text-[10px] text-muted-foreground font-medium">Weight: {q.weight}</span>
+                        </div>
+                        <div className="text-xs font-semibold mt-1 truncate">{q.question}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Edit workspace */}
+              <div className="glass p-5 sm:p-6 rounded-3xl">
+                {selectedEditQ ? (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between border-b border-ink/5 pb-3">
+                      <div>
+                        <span className="inline-block bg-[color:var(--cyan)]/10 text-[color:var(--cyan-glow)] text-[10px] font-mono font-bold px-2 py-0.5 rounded-md uppercase">
+                          {selectedEditQ.id}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2 font-medium">
+                          Phase: {selectedEditQ.phase}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                          Weight:
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="20"
+                          step="1"
+                          value={selectedEditQ.weight}
+                          onChange={(e) => updateQuestionField(selectedEditQ.id, "weight", parseInt(e.target.value) || 0)}
+                          className="w-14 rounded-lg bg-ink/10 border border-ink/10 px-2 py-1 text-center text-xs font-bold text-foreground focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Question text */}
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1.5">
+                        Question Label Text
+                      </label>
+                      <input
+                        type="text"
+                        value={selectedEditQ.question}
+                        onChange={(e) => updateQuestionField(selectedEditQ.id, "question", e.target.value)}
+                        className="w-full bg-ink/5 rounded-xl border border-ink/10 px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-[color:var(--cyan)]"
+                        placeholder="Enter the question text"
+                      />
+                    </div>
+
+                    {/* Plain English Explainer */}
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-1.5">
+                        Explainer Prompt Text (Plain English)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={selectedEditQ.explainer}
+                        onChange={(e) => updateQuestionField(selectedEditQ.id, "explainer", e.target.value)}
+                        className="w-full bg-ink/5 rounded-xl border border-ink/10 px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-[color:var(--cyan)] resize-none"
+                        placeholder="Plain language explanation card contents..."
+                      />
+                    </div>
+
+                    {/* Answer Options list */}
+                    <div>
+                      <label className="block text-[10px] uppercase font-bold text-muted-foreground tracking-wider mb-2">
+                        Answer Options and Scoring Weights
+                      </label>
+                      
+                      <div className="space-y-2.5">
+                        {selectedEditQ.options?.map((opt: any, idx: number) => (
+                          <div key={idx} className="flex gap-2.5 items-center">
+                            <div className="flex-1">
+                              <span className="text-[9px] text-muted-foreground uppercase font-bold pl-1">Option Display Name</span>
+                              <input
+                                type="text"
+                                value={opt.label}
+                                onChange={(e) => updateOptionField(selectedEditQ.id, idx, "label", e.target.value)}
+                                className="w-full bg-ink/5 rounded-xl border border-ink/15 px-3 py-2 text-xs text-foreground focus:outline-none"
+                              />
+                            </div>
+                            
+                            <div className="w-28 shrink-0">
+                              <span className="text-[9px] text-muted-foreground uppercase font-bold pl-1">Multiplier (0-1)</span>
+                              <input
+                                type="number"
+                                min="0"
+                                max="1"
+                                step="0.1"
+                                value={opt.value ?? ""}
+                                onChange={(e) => updateOptionField(selectedEditQ.id, idx, "value", e.target.value)}
+                                className="w-full bg-ink/5 rounded-xl border border-ink/15 px-3 py-2 text-xs text-foreground font-semibold text-center focus:outline-none"
+                                placeholder="Skip/Value"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <p className="mt-2 text-[10px] text-muted-foreground leading-relaxed">
+                        * Multipliers usually evaluate to 1.0 (resilient/pass), 0.0 (exposed/fail), or a decimal weight in between. Leave empty or 0 if it has no score impact.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center py-16 text-center">
+                    <Cpu size={32} className="text-muted-foreground/30 animate-pulse" />
+                    <p className="mt-3 text-xs text-muted-foreground max-w-xs">
+                      No question selected. Pick a parameter from the sidebar list to inspect and details edit.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Selected Submission Inspector Modal */}

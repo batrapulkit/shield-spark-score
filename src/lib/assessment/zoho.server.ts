@@ -56,6 +56,8 @@ export async function createZohoLead(
   profile: Profile,
   answers: Answers,
   scan: ScanResult | null,
+  customQuick?: any[],
+  customDeep?: any[]
 ) {
   const token = await getZohoAccessToken();
   const apiBase = process.env.ZOHO_API_BASE || "https://www.zohoapis.ca/crm/v7";
@@ -63,8 +65,8 @@ export async function createZohoLead(
   console.log(`Submitting lead ${lead.email} to Zoho CRM...`);
 
   // Calculate assessment details to store in the Description
-  const score = computeScore(profile, answers, scan);
-  const flags = computeFlags(profile, answers, scan);
+  const score = computeScore(profile, answers, scan, customQuick, customDeep);
+  const flags = computeFlags(profile, answers, scan, customQuick, customDeep);
   const sensitive = isSensitive(profile, answers);
   const priority = computePriority(flags, scan, sensitive, score.final, lead.decisionMaker);
   const nd = computeND(profile, answers, scan, lead.decisionMaker, score.final);

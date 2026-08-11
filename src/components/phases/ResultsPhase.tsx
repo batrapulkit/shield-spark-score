@@ -62,12 +62,12 @@ export function ResultsPhase() {
   }
 
   const score = useMemo(
-    () => computeScore(s.profile, s.answers, s.scan),
-    [s.profile, s.answers, s.scan],
+    () => computeScore(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
+    [s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions],
   );
   const flags = useMemo(
-    () => computeFlags(s.profile, s.answers, s.scan),
-    [s.profile, s.answers, s.scan],
+    () => computeFlags(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
+    [s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions],
   );
   const recs = useMemo(() => buildRecommendations(s.profile, flags, s.scan), [s.profile, flags, s.scan]);
   const nd = useMemo(
@@ -87,8 +87,8 @@ export function ResultsPhase() {
     [flags, s.scan, sensitive, score.final, s.lead],
   );
   const cats = useMemo(
-    () => categorySubscores(s.profile, s.answers),
-    [s.profile, s.answers],
+    () => categorySubscores(s.profile, s.answers, s.quickQuestions, s.deepQuestions),
+    [s.profile, s.answers, s.quickQuestions, s.deepQuestions],
   );
   const summary = useMemo(
     () => executiveSummary(score.final, score.band, flags),
@@ -510,7 +510,7 @@ export function ResultsPhase() {
             {applicableGuides.map(([id, title]) => (
               <a
                 key={id}
-                href="https://shield-identity.com/resources"
+                href={s.resourcesUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 rounded-2xl border border-ink/10 p-4 transition-all hover:bg-ink/5 hover:border-[color:var(--cyan)]/45 group"
@@ -649,7 +649,7 @@ function RecCard({ rec, index }: { rec: RecommendationCard; index: number }) {
               <div className="sm:col-span-2 flex flex-wrap items-center gap-2.5 mt-2 font-sans">
                 {rec.diyGuide && (
                   <a
-                    href="https://shield-identity.com/resources"
+                    href={s.resourcesUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3.5 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm"
