@@ -54,6 +54,7 @@ export const submitToCrm = createServerFn({ method: "POST" })
         profile: z.any(),
         answers: z.any(),
         scan: z.any().nullable(),
+        extraEmails: z.array(z.string()).optional(),
       })
       .parse(data),
   )
@@ -102,7 +103,8 @@ export const submitToCrm = createServerFn({ method: "POST" })
           data.answers,
           data.scan,
           customQuick,
-          customDeep
+          customDeep,
+          data.extraEmails
         );
         crmSuccess = true;
       } catch (crmError) {

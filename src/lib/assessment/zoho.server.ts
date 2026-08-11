@@ -57,7 +57,8 @@ export async function createZohoLead(
   answers: Answers,
   scan: ScanResult | null,
   customQuick?: any[],
-  customDeep?: any[]
+  customDeep?: any[],
+  extraEmails?: string[]
 ) {
   const token = await getZohoAccessToken();
   const apiBase = process.env.ZOHO_API_BASE || "https://www.zohoapis.ca/crm/v7";
@@ -92,17 +93,37 @@ export async function createZohoLead(
     `Domain: ${scan?.domain || lead.business}`,
     `Reachable: ${scan?.reachable ? "Yes" : "No"}`,
     `HTTPS enabled: ${scan?.https ? "Yes" : "No"}`,
+    `SSL Certificate: ${scan?.ssl || "N/A"}`,
+    `DNSSEC Enabled: ${scan?.dnssec ? "Yes" : "No"}`,
+    `CAA Record configuration: ${scan?.caa ? "Yes" : "No"}`,
+    `Mail Provider: ${scan?.mailProvider || "N/A"}`,
     `SPF configured: ${scan?.spf ? "Yes" : "No"}`,
     `DKIM configured: ${scan?.dkim ? "Yes" : "No"}`,
-    `DMARC policy: ${scan?.dmarcPolicy || "N/A"}`,
+    `DMARC policy: ${scan?.dmarc ? `Yes (${scan?.dmarcPolicy || "none"})` : "No"}`,
     `Exposed credentials count: ${scan?.breach?.checked ? scan.breach.count : "Not checked"}`,
     scan?.breach?.count && scan.breach.count > 0
       ? `Breached databases: ${scan.breach.breaches.join(", ")}`
       : null,
+    scan?.exposedPaths && scan.exposedPaths.length > 0
+      ? `Exposed Sensitive Paths: ${scan.exposedPaths.join(", ")}`
+      : null,
+    scan?.ports && scan.ports.length > 0
+      ? `Open Ports: ${scan.ports.join(", ")}`
+      : null,
+    ``,
+    `=== QUESTIONNAIRE ANSWERS ===`,
+    ...Object.entries(answers).map(([key, val]) => {
+      const matchedQ = [...(customQuick || []), ...(customDeep || [])].find((q) => q.id === key);
+      const qText = matchedQ ? matchedQ.question : key.replace(/([A-Z])/g, " $1");
+      return `- ${qText}: ${val}`;
+    }),
     ``,
     `=== CRITICAL COMPLIANCE DETAILS ===`,
     `Consent to Contact: ${lead.consent ? "Yes" : "No"}`,
     `Is Decision Maker: ${lead.decisionMaker}`,
+    extraEmails && extraEmails.length > 0
+      ? `Additional Emails for Alerts: ${extraEmails.join(", ")}`
+      : null,
   ].filter((p) => p !== null);
 
   const payload = {
@@ -116,6 +137,7 @@ export async function createZohoLead(
         Designation: lead.role,
         Lead_Source: "Cybersecurity Shield Score Scan",
         Description: descriptionParts.join("\n"),
+        Website: scan?.domain || lead.business,
       },
     ],
   };

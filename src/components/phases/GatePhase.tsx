@@ -115,6 +115,7 @@ export function GatePhase() {
           profile: s.profile,
           answers: s.answers,
           scan: currentScan,
+          extraEmails: s.extraEmails,
         },
       });
     } catch (crmErr) {
