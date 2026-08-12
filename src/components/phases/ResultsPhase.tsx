@@ -51,16 +51,6 @@ export function ResultsPhase() {
   const s = useAssessment();
   const [deepOpen, setDeepOpen] = useState(false);
 
-  if (deepOpen) {
-    return (
-      <QuestionsPhase
-        mode="deep"
-        onBack={() => setDeepOpen(false)}
-        onDone={() => setDeepOpen(false)}
-      />
-    );
-  }
-
   const score = useMemo(
     () => computeScore(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
     [s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions],
@@ -126,10 +116,19 @@ export function ResultsPhase() {
     .filter((r) => r.priority !== "Low")
     .slice(0, 6)
     .map((r) => ({ name: r.category, value: r.priority === "Critical" ? 90 : r.priority === "High" ? 65 : 40 }));
-
   const industryFramework = s.profile.industry
     ? INDUSTRY_META[s.profile.industry]?.framework
     : null;
+
+  if (deepOpen) {
+    return (
+      <QuestionsPhase
+        mode="deep"
+        onBack={() => setDeepOpen(false)}
+        onDone={() => setDeepOpen(false)}
+      />
+    );
+  }
 
   return (
     <PhaseShell maxWidth="max-w-7xl">

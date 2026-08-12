@@ -30,6 +30,20 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
     setShowDeeperPrompt(false);
   }, [mode]);
 
+  useEffect(() => {
+    if (currentMode === "deep" && s.email && !s.answers.emailtype) {
+      const emailDomain = s.email.split("@")[1]?.toLowerCase();
+      const siteDomain = extractDomain(s.website).toLowerCase();
+      const free = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "icloud.com"];
+      const auto: Answers["emailtype"] = free.includes(emailDomain)
+        ? "Free"
+        : emailDomain === siteDomain
+          ? "Own domain"
+          : "A mix";
+      s.setAnswer("emailtype", auto);
+    }
+  }, [currentMode, s.email, s.website, s.answers.emailtype, s.setAnswer]);
+
   const queue = useMemo<QuestionDef[]>(() => {
     if (currentMode === "quick") {
       let q = [...s.quickQuestions];
@@ -58,16 +72,6 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
     // skip emailtype if we already know from provided email
     if (s.email) {
       deep = deep.filter((x) => x.id !== "emailtype");
-      // auto-answer emailtype based on domain match
-      const emailDomain = s.email.split("@")[1]?.toLowerCase();
-      const siteDomain = extractDomain(s.website).toLowerCase();
-      const free = ["gmail.com", "outlook.com", "yahoo.com", "hotmail.com", "icloud.com"];
-      const auto: Answers["emailtype"] = free.includes(emailDomain)
-        ? "Free"
-        : emailDomain === siteDomain
-          ? "Own domain"
-          : "A mix";
-      if (!s.answers.emailtype) s.setAnswer("emailtype", auto);
     }
     if (s.profile.size === "Just me (no staff)") {
       deep = deep.filter((x) => x.id !== "accessoff");
