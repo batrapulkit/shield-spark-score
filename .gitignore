@@ -35,8 +35,8 @@ dist-ssr
 *.sw?
 
 # Vercel and Temp folders
-.vercel/
+.vercel/*
+!.vercel/project.json
 tmp/
 
-.vercel
 .env*
