@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { createFileRoute, Link, useParams, useNavigate } from "@tanstack/react-router";
 import { useState, useEffect, useMemo } from "react";
 import * as Icons from "lucide-react";
 import { useAssessment } from "@/lib/assessment/store";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/diy/$guideId")({
 function DiyGuidePage() {
   const { guideId } = useParams({ from: "/diy/$guideId" });
   const s = useAssessment();
+  const navigate = useNavigate();
 
   // Find active guide
   const guide = useMemo(() => DIY_GUIDES[guideId] || null, [guideId]);
@@ -117,7 +118,8 @@ function DiyGuidePage() {
             className="inline-flex items-center gap-2 rounded-xl bg-ink/5 border border-ink/10 px-4 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground transition-all duration-200"
           >
             <Icons.Reply size={16} />
-            <span>Back to Assessment</span>
+            <span className="hidden sm:inline">Back to Assessment</span>
+            <span className="sm:hidden">Back</span>
           </Link>
         </div>
       </nav>
@@ -141,7 +143,7 @@ function DiyGuidePage() {
         {/* Dashboard Grid */}
         <div className="grid gap-8 lg:grid-cols-[290px_1fr]">
           {/* LEFT SIDEBAR: Checklist Selection */}
-          <aside className="space-y-6 print:hidden">
+          <aside className="hidden lg:block space-y-6 print:hidden">
             <div className="glass-strong rounded-3xl p-5 border border-ink/10">
               <h2 className="text-base font-bold text-foreground mb-4 uppercase tracking-wider flex items-center gap-2">
                 <Icons.FolderKanban size={16} className="text-[color:var(--cyan)]" />
@@ -222,6 +224,35 @@ function DiyGuidePage() {
 
           {/* RIGHT CONTENT WORKSPACE: Guide Details */}
           <main className="space-y-6 print:p-0">
+            {/* Mobile Guide Selector (Visible only on mobile/tablets) */}
+            <div className="lg:hidden print:hidden">
+              <label htmlFor="mobile-guide-select" className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2 px-1">
+                Select DIY Guide
+              </label>
+              <div className="glass rounded-2xl border border-ink/10 px-4 py-3.5 relative">
+                <select
+                  id="mobile-guide-select"
+                  value={guide.id}
+                  onChange={(e) => {
+                    navigate({ to: "/diy/$guideId", params: { guideId: e.target.value } });
+                  }}
+                  className="w-full bg-transparent text-base text-foreground font-semibold focus:outline-none appearance-none pr-8 cursor-pointer"
+                >
+                  {Object.values(DIY_GUIDES).map((g) => {
+                    const stats = guideStats[g.id] || { total: g.steps.length, checked: 0, percent: 0 };
+                    return (
+                      <option key={g.id} value={g.id} className="bg-[#0b0c16] text-foreground font-semibold">
+                        {g.title} ({stats.checked}/{stats.total} steps)
+                      </option>
+                    );
+                  })}
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                  <Icons.ChevronDown size={18} />
+                </div>
+              </div>
+            </div>
+
             {/* Guide Header Banner */}
             <section
               className="relative overflow-hidden rounded-3xl border p-6 sm:p-8 glass-strong print:border-none print:shadow-none print:bg-white print:p-0"
