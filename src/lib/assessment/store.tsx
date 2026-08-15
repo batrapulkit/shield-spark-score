@@ -59,6 +59,52 @@ const initial: State = {
 export function AssessmentProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<State>(initial);
 
+  // Load cached assessment state on mount (client-side only)
+  useEffect(() => {
+    const cached = localStorage.getItem("shield_assessment_state");
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setState((s) => ({
+          ...s,
+          ...parsed,
+        }));
+      } catch (e) {
+        console.warn("Failed to parse cached assessment state:", e);
+      }
+    }
+  }, []);
+
+  // Sync state to localStorage on changes
+  useEffect(() => {
+    if (state.website || state.email || state.phase !== "hook") {
+      const stateToCache = {
+        phase: state.phase,
+        website: state.website,
+        email: state.email,
+        extraEmails: state.extraEmails,
+        consent: state.consent,
+        scan: state.scan,
+        profile: state.profile,
+        answers: state.answers,
+        lead: state.lead,
+        deepMode: state.deepMode,
+      };
+      localStorage.setItem("shield_assessment_state", JSON.stringify(stateToCache));
+    }
+  }, [
+    state.phase,
+    state.website,
+    state.email,
+    state.extraEmails,
+    state.consent,
+    state.scan,
+    state.profile,
+    state.answers,
+    state.lead,
+    state.deepMode,
+  ]);
+
   // Fetch admin settings for dynamic config on mount
   useEffect(() => {
     import("./scan.functions")
@@ -93,14 +139,17 @@ export function AssessmentProvider({ children }: { children: ReactNode }) {
       setScan: (scan) => setState((s) => ({ ...s, scan })),
       setProfile: (p) => setState((s) => ({ ...s, profile: { ...s.profile, ...p } })),
       setAnswer: (key, value) =>
-        setState((s) => ({ ...s, answers: { ...s.answers, [key]: value } })),
+          setState((s) => ({ ...s, answers: { ...s.answers, [key]: value } })),
       setLead: (l) => setState((s) => ({ ...s, lead: l })),
       setDeepMode: (v) => setState((s) => ({ ...s, deepMode: v })),
       setCalendlyUrl: (v) => setState((s) => ({ ...s, calendlyUrl: v })),
       setResourcesUrl: (v) => setState((s) => ({ ...s, resourcesUrl: v })),
       setQuickQuestions: (v) => setState((s) => ({ ...s, quickQuestions: v })),
       setDeepQuestions: (v) => setState((s) => ({ ...s, deepQuestions: v })),
-      reset: () => setState(initial),
+      reset: () => {
+        localStorage.removeItem("shield_assessment_state");
+        setState(initial);
+      },
     }),
     [state],
   );

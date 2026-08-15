@@ -8,6 +8,7 @@ import {
   Sparkles,
   TrendingUp,
 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -38,6 +39,7 @@ import {
   type RecommendationCard,
 } from "@/lib/assessment/engine";
 import { useAssessment } from "@/lib/assessment/store";
+import { DIY_GUIDES } from "@/lib/assessment/guidesData";
 import { QuestionsPhase } from "./QuestionsPhase";
 
 const PRIORITY_COLOR: Record<Priority, string> = {
@@ -89,17 +91,9 @@ export function ResultsPhase() {
     const guides = new Map<string, string>();
     recs.forEach((r) => {
       if (r.diyGuide) {
-        let title = "";
-        if (r.diyGuide === "guide-mfa") title = "Multi-Factor Authentication (MFA) Setup Guide";
-        else if (r.diyGuide === "guide-backup") title = "3-2-1 Enterprise Backup Strategy Guide";
-        else if (r.diyGuide === "guide-phish") title = "Employee Phishing Awareness Training Kit";
-        else if (r.diyGuide === "kit") title = "Shield Cyber Starter Kit Template";
-        else if (r.diyGuide === "guide-pw") title = "Password Manager Deployment Plan";
-        else if (r.diyGuide === "guide-ai") title = "Corporate AI Use & Data Protection Policy";
-        else if (r.diyGuide === "guide-pentest") title = "External Penetration Testing Scope Checklist";
-        
-        if (title) {
-          guides.set(r.diyGuide, title);
+        const guide = DIY_GUIDES[r.diyGuide];
+        if (guide) {
+          guides.set(r.diyGuide, guide.title);
         }
       }
     });
@@ -507,12 +501,11 @@ export function ResultsPhase() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {applicableGuides.map(([id, title]) => (
-              <a
+              <Link
                 key={id}
-                href={s.resourcesUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-ink/10 p-4 transition-all hover:bg-ink/5 hover:border-[color:var(--cyan)]/45 group"
+                to="/diy/$guideId"
+                params={{ guideId: id }}
+                className="flex items-center gap-3 rounded-2xl border border-ink/10 p-4 transition-all hover:bg-ink/5 hover:border-[color:var(--cyan)]/45 group cursor-pointer"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[color:var(--cyan)]/10 text-[color:var(--cyan-glow)]">
                   <Sparkles size={16} />
@@ -525,7 +518,7 @@ export function ResultsPhase() {
                     {title}
                   </div>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         </motion.div>
@@ -647,14 +640,13 @@ function RecCard({ rec, index }: { rec: RecommendationCard; index: number }) {
               <Block title="Recommended fix" body={rec.fix} full />
               <div className="sm:col-span-2 flex flex-wrap items-center gap-2.5 mt-2 font-sans">
                 {rec.diyGuide && (
-                  <a
-                    href={s.resourcesUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3.5 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm"
+                  <Link
+                    to="/diy/$guideId"
+                    params={{ guideId: rec.diyGuide }}
+                    className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--navy)]/15 bg-[color:var(--navy)]/5 px-3.5 py-2 text-xs font-semibold text-[color:var(--card-foreground)] transition-shadow hover:shadow-sm cursor-pointer"
                   >
                     DIY Guide → {rec.diyGuide}
-                  </a>
+                  </Link>
                 )}
                 <a
                   href={s.calendlyUrl}

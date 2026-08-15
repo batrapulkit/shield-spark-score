@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { Link } from "@tanstack/react-router";
 import { ShieldLogo } from "./ShieldLogo";
 import { useAssessment } from "@/lib/assessment/store";
 
@@ -15,7 +16,9 @@ export function PhaseShell({ children, progress, maxWidth = "max-w-3xl" }: Props
   return (
     <div className="min-h-screen">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 font-sans">
-        <ShieldLogo />
+        <Link to="/" className="cursor-pointer transition-opacity hover:opacity-90 active:scale-97">
+          <ShieldLogo />
+        </Link>
         <div className="flex items-center gap-4">
           <span className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
             <span className="h-2 w-2 rounded-full bg-[color:var(--success)]" />

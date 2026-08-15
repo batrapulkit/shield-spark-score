@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
-import { AssessmentProvider, useAssessment } from "@/lib/assessment/store";
+import { useAssessment } from "@/lib/assessment/store";
 import { HookPhase } from "@/components/phases/HookPhase";
 import { ScanPhase } from "@/components/phases/ScanPhase";
 import { ProfilePhase } from "@/components/phases/ProfilePhase";
@@ -36,11 +36,7 @@ export const Route = createFileRoute("/")({
 });
 
 function IndexPage() {
-  return (
-    <AssessmentProvider>
-      <Flow />
-    </AssessmentProvider>
-  );
+  return <Flow />;
 }
 
 function Flow() {
