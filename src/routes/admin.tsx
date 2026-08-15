@@ -50,7 +50,7 @@ function AdminPage() {
   // System states
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [settings, setSettings] = useState({
-    calendlyUrl: "https://shield-identity.com/contact",
+    calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
     resourcesUrl: "https://shield-identity.com/resources",
     zohoEnabled: true,
     scanMode: "authentic" as "authentic" | "mock",
@@ -88,7 +88,7 @@ function AdminPage() {
       // Load configurations
       const config = await getAdminSettings();
       setSettings({
-        calendlyUrl: config.calendlyUrl || "https://shield-identity.com/contact",
+        calendlyUrl: config.calendlyUrl || "https://calendly.com/shieldidentity-ca/consultation",
         resourcesUrl: config.resourcesUrl || "https://shield-identity.com/resources",
         zohoEnabled: config.zohoEnabled ?? true,
         scanMode: (config.scanMode as "authentic" | "mock") || "authentic",

@@ -128,7 +128,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
       const settings = await getGlobalSettings();
       if (settings) {
         return {
-          calendlyUrl: settings.calendlyUrl || "https://shield-identity.com/contact",
+          calendlyUrl: settings.calendlyUrl || "https://calendly.com/shieldidentity-ca/consultation",
           resourcesUrl: settings.resourcesUrl || "https://shield-identity.com/resources",
           zohoEnabled: settings.zohoEnabled ?? true,
           scanMode: settings.scanMode || "authentic",
@@ -137,7 +137,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
         };
       }
       return {
-        calendlyUrl: "https://shield-identity.com/contact",
+        calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
         resourcesUrl: "https://shield-identity.com/resources",
         zohoEnabled: true,
         scanMode: "authentic",
@@ -147,7 +147,7 @@ export const getAdminSettings = createServerFn({ method: "GET" })
     } catch (err) {
       console.error("Failed to load settings server-side, returning defaults:", err);
       return {
-        calendlyUrl: "https://shield-identity.com/contact",
+        calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
         resourcesUrl: "https://shield-identity.com/resources",
         zohoEnabled: true,
         scanMode: "authentic",
