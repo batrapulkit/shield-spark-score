@@ -6,6 +6,28 @@ import { useAssessment } from "@/lib/assessment/store";
 import { SCAN_STEPS, extractDomain, emptyScan } from "@/lib/assessment/scan";
 import { runScan } from "@/lib/assessment/scan.functions";
 
+const SHORT_EXPLANATIONS: Record<string, string> = {
+  reach: "Checks if your website is live and accessible to visitors on the internet.",
+  https: "Verifies that your website encrypts data so hackers can't steal customer info.",
+  ssl: "Makes sure your website's security certificate is valid and trusted by browsers.",
+  spf: "Checks if your email is protected against people sending fake emails pretending to be you.",
+  dkim: "Verifies that emails from your domain have a digital signature proving they're legitimate.",
+  dmarc: "Ensures you have rules telling email providers what to do with suspicious emails from your domain.",
+  mx: "Confirms your email delivery system is set up correctly so you can receive messages.",
+  dnssec: "Checks if your website address is protected from being secretly redirected to a fake site.",
+  caa: "Verifies that only authorised security providers can issue certificates for your website.",
+  tls: "Ensures browsers are forced to always use a secure, encrypted connection to your site.",
+  headers: "Checks for invisible security shields that protect your visitors from common web attacks.",
+  cookies: "Verifies that your website's stored user data (cookies) is protected from theft.",
+  mixed: "Checks if your secure website accidentally loads any unprotected content.",
+  banner: "Looks for server info leaks that could tell hackers exactly how to attack you.",
+  files: "Scans for sensitive files (like backups or configs) accidentally left open to the public.",
+  subdomains: "Lists all the sub-addresses tied to your domain to spot forgotten or risky ones.",
+  ports: "Checks for hidden doorways into your server that shouldn't be open to the internet.",
+  tech: "Identifies what software your website runs on to check for known vulnerabilities.",
+  breach: "Checks if any of your company email addresses have appeared in known data breaches.",
+};
+
 interface RowState {
   key: string;
   label: string;
@@ -216,7 +238,7 @@ export function ScanPhase() {
               secure channel
             </span>
           </div>
-          <div className="max-h-[520px] overflow-hidden p-4 font-mono text-sm">
+          <div className="max-h-[720px] overflow-y-auto p-4 font-mono text-sm">
             <div className="text-muted-foreground">$ shield-scan --passive {domain}</div>
             <AnimatePresence initial={false}>
               {rows.map((r) => (
@@ -248,17 +270,24 @@ export function ScanPhase() {
                   {r.status === "done" && r.result?.ok === "skip" && (
                     <MinusCircle size={14} className="text-muted-foreground" />
                   )}
-                  <span
-                    className={
-                      r.status === "done"
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {r.label}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className={
+                        r.status === "done"
+                          ? "text-foreground"
+                          : "text-muted-foreground"
+                      }
+                    >
+                      {r.label}
+                    </span>
+                    {SHORT_EXPLANATIONS[r.key] && (
+                      <div className="text-[11px] text-muted-foreground/60 leading-tight mt-0.5 font-sans">
+                        {SHORT_EXPLANATIONS[r.key]}
+                      </div>
+                    )}
+                  </div>
                   {r.result && (
-                    <span className="ml-auto text-xs text-muted-foreground">
+                    <span className="ml-auto text-xs text-muted-foreground shrink-0">
                       {r.result.text}
                     </span>
                   )}

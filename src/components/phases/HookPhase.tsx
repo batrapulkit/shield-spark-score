@@ -82,7 +82,7 @@ export function HookPhase() {
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder="yourcompany.com"
+                  placeholder="Enter your company website (e.g. yourcompany.com)"
                   className="w-full bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                   aria-label="Website"
                 />
@@ -96,7 +96,7 @@ export function HookPhase() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder="owner@company.com   (optional — unlocks breach check)"
+                  placeholder="Your email address (optional — unlocks breach check)"
                   className="w-full bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                   aria-label="Email"
                 />
