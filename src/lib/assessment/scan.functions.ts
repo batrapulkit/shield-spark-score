@@ -214,3 +214,57 @@ export const deleteSubmissionRecord = createServerFn({ method: "POST" })
     return deleteSubmission(data.email);
   });
 
+export const sendReportEmail = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        email: z.string().email(),
+        score: z.number(),
+        band: z.string(),
+        business: z.string(),
+        name: z.string(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    const RESEND_API_KEY = process.env.RESEND_API_KEY;
+    if (!RESEND_API_KEY) {
+      console.warn("RESEND_API_KEY not configured. Simulating email send.");
+      return { success: true, simulated: true };
+    }
+
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #111;">
+        <h2>Your Shield Score Report — ${data.business}</h2>
+        <p>Hi ${data.name},</p>
+        <p>Thank you for completing the Shield Score assessment. Your current cyber risk score is <strong>${data.score}/100</strong> (${data.band}).</p>
+        <p>Your full executive report details your critical security gaps and provides actionable steps to secure your business.</p>
+        <p>Best regards,<br/>The Shield Identity Team</p>
+      </div>
+    `;
+
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "Shield Identity <reports@shield-identity.com>",
+          to: data.email,
+          subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
+          html,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      return { success: true };
+    } catch (err) {
+      console.error("Failed to send report email:", err);
+      throw new Error("Failed to send email");
+    }
+  });
+

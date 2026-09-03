@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, Loader2, MinusCircle, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowLeft, Check, Loader2, MinusCircle, X } from "lucide-react";
 import { PhaseShell } from "@/components/shield/PhaseShell";
 import { useAssessment } from "@/lib/assessment/store";
 import { SCAN_STEPS, extractDomain, emptyScan } from "@/lib/assessment/scan";
@@ -210,6 +210,16 @@ export function ScanPhase() {
 
   return (
     <PhaseShell maxWidth="max-w-5xl">
+      <div className="mb-6 flex justify-start">
+        <button
+          onClick={() => s.setPhase("hook")}
+          disabled={done}
+          className="inline-flex items-center gap-2 rounded-full text-sm text-muted-foreground transition-colors hover:text-foreground disabled:opacity-0 disabled:pointer-events-none"
+        >
+          <ArrowLeft size={16} /> Back
+        </button>
+      </div>
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="text-xs uppercase tracking-widest text-[color:var(--cyan)]">
           Passive Exposure Scan

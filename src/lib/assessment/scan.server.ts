@@ -327,6 +327,23 @@ async function probePort(domain: string, p: (typeof WEB_PORTS)[number]) {
 
 export async function fetchEmailBreaches(email: string): Promise<string[]> {
   if (!email || !email.includes("@")) return [];
+
+  const HIBP_KEY = process.env.HIBP_API_KEY;
+  if (HIBP_KEY) {
+    try {
+      const res = await fetch(`https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`, {
+        headers: { "user-agent": UA, "hibp-api-key": HIBP_KEY },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.status === 404) return [];
+      if (res.ok) {
+        const data = await res.json() as { Name: string }[];
+        if (Array.isArray(data)) return data.map(b => b.Name);
+      }
+    } catch (err) {
+      console.error(`HIBP Error for ${email}:`, err);
+    }
+  }
   try {
     const res = await fetch(`https://api.xposedornot.com/v1/check-email/${encodeURIComponent(email)}`, {
       headers: { "user-agent": UA },
