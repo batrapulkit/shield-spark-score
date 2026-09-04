@@ -257,30 +257,32 @@ export function ScanPhase() {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.25 }}
-                  className="mt-1.5 flex items-center gap-2"
+                  className="mt-2 flex items-start gap-2"
                 >
-                  {r.status === "pending" && (
-                    <span className="text-muted-foreground">›</span>
-                  )}
-                  {r.status === "running" && (
-                    <Loader2
-                      size={14}
-                      className="animate-spin text-[color:var(--cyan)]"
-                    />
-                  )}
-                  {r.status === "done" && r.result?.ok === "pass" && (
-                    <Check size={14} style={{ color: "var(--success)" }} />
-                  )}
-                  {r.status === "done" && r.result?.ok === "warn" && (
-                    <AlertTriangle size={14} style={{ color: "var(--warning)" }} />
-                  )}
-                  {r.status === "done" && r.result?.ok === "fail" && (
-                    <X size={14} style={{ color: "var(--danger)" }} />
-                  )}
-                  {r.status === "done" && r.result?.ok === "skip" && (
-                    <MinusCircle size={14} className="text-muted-foreground" />
-                  )}
-                  <div className="flex-1 min-w-0">
+                  <div className="mt-[2px] shrink-0">
+                    {r.status === "pending" && (
+                      <span className="text-muted-foreground">›</span>
+                    )}
+                    {r.status === "running" && (
+                      <Loader2
+                        size={14}
+                        className="animate-spin text-[color:var(--cyan)]"
+                      />
+                    )}
+                    {r.status === "done" && r.result?.ok === "pass" && (
+                      <Check size={14} style={{ color: "var(--success)" }} />
+                    )}
+                    {r.status === "done" && r.result?.ok === "warn" && (
+                      <AlertTriangle size={14} style={{ color: "var(--warning)" }} />
+                    )}
+                    {r.status === "done" && r.result?.ok === "fail" && (
+                      <X size={14} style={{ color: "var(--danger)" }} />
+                    )}
+                    {r.status === "done" && r.result?.ok === "skip" && (
+                      <MinusCircle size={14} className="text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 pr-2">
                     <span
                       className={
                         r.status === "done"
@@ -291,13 +293,16 @@ export function ScanPhase() {
                       {r.label}
                     </span>
                     {SHORT_EXPLANATIONS[r.key] && (
-                      <div className="text-[11px] text-muted-foreground/60 leading-tight mt-0.5 font-sans">
+                      <div className="text-[11px] text-muted-foreground/60 leading-tight mt-1 font-sans">
                         {SHORT_EXPLANATIONS[r.key]}
                       </div>
                     )}
                   </div>
                   {r.result && (
-                    <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                    <span 
+                      title={r.result.text}
+                      className="text-xs text-muted-foreground max-w-[40%] sm:max-w-[50%] truncate text-right shrink-0"
+                    >
                       {r.result.text}
                     </span>
                   )}
