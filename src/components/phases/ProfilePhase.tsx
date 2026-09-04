@@ -134,7 +134,7 @@ export function ProfilePhase() {
           </div>
 
           <div className="mt-8 border-t border-ink/10 pt-6 text-center text-xs text-muted-foreground font-sans">
-            Confused about your business tech setup?{" "}
+            Confused about your business security setup?{" "}
             <a
               href={s.calendlyUrl}
               target="_blank"
