@@ -347,4 +347,18 @@ export const DEEP_QUESTIONS: QuestionDef[] = [
     ],
     weight: 1,
   },
+  {
+    id: "vmware",
+    phase: "DEEP",
+    question: "Do you use VMware in your business?",
+    explainer:
+      "VMware and related virtualization systems are critical infrastructure. Unpatched virtualization servers are a primary target for ransomware deployment.",
+    options: [
+      { label: "Yes", value: 1 },
+      { label: "Sort of", value: 0.5 },
+      { label: "No", value: 0 },
+      { label: "Not sure", value: 0 },
+    ],
+    weight: 0,
+  },
 ];

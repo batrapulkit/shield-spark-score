@@ -67,6 +67,7 @@ export interface Answers {
   airules?: QAnswer;
   incidenthistory?: "No" | "Not sure" | "Yes";
   remotework?: "No" | "Sometimes" | "Yes" | "Not sure";
+  vmware?: QAnswer;
 }
 
 export interface ScanResult {
