@@ -306,7 +306,7 @@ async function probePath(base: string, p: (typeof SENSITIVE_PATHS)[number]) {
   }
 }
 
-// Only ports reachable over HTTP(S) from a serverless runtime — reported honestly.
+// Only ports reachable over HTTP(S) from a serverless runtime - reported honestly.
 const WEB_PORTS: { port: number; name: string; scheme: "http" | "https" }[] = [
   { port: 8080, name: "HTTP alt (8080)", scheme: "http" },
   { port: 8443, name: "HTTPS alt (8443)", scheme: "https" },

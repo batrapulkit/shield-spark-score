@@ -136,7 +136,7 @@ export function GatePhase() {
         </h1>
         <p className="mt-2 max-w-xl text-muted-foreground">
           We'll unlock your full dashboard, tailored recommendations,
-          {isEligible ? " and — if you qualify — an offer for a complimentary internal network assessment." : "."}
+          {isEligible ? " and - if you qualify - an offer for a complimentary internal network assessment." : "."}
         </p>
       </motion.div>
 

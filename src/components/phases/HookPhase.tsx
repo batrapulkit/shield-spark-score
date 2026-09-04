@@ -64,7 +64,7 @@ export function HookPhase() {
             className="mt-5 max-w-xl text-lg text-muted-foreground"
           >
             Get an instant Shield Score based on your website, email security, and
-            cybersecurity practices — built for Canadian SMBs, no installation
+            cybersecurity practices - built for Canadian SMBs, no installation
             required.
           </motion.p>
 
@@ -96,7 +96,7 @@ export function HookPhase() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder="Your email address (optional — unlocks breach check)"
+                  placeholder="Your email address (optional - unlocks breach check)"
                   className="w-full bg-transparent text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
                   aria-label="Email"
                 />

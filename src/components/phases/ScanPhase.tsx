@@ -229,7 +229,7 @@ export function ScanPhase() {
         </h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           We're checking your public-facing security posture. This uses only passive,
-          public data — no logins, no installs, no traffic to internal systems.
+          public data - no logins, no installs, no traffic to internal systems.
         </p>
       </motion.div>
 

@@ -306,7 +306,7 @@ export function ResultsPhase() {
                   You qualify for a complimentary Internal Network Discovery Assessment.
                 </div>
                 <div className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Limited spots available — one-business-day scheduling, no obligation.
+                  Limited spots available - one-business-day scheduling, no obligation.
                 </div>
               </div>
             </div>
@@ -382,7 +382,7 @@ export function ResultsPhase() {
             >
               <div className="flex items-center gap-2 font-semibold" style={{ color: priority.band === "Hot" ? "var(--danger)" : priority.band === "Warm" ? "var(--warning)" : "var(--success)" }}>
                 {priority.band === "Hot" ? <AlertTriangle size={18} /> : priority.band === "Warm" ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
-                {priority.band === "Hot" ? "High Priority — Immediate attention recommended for your security" : priority.band === "Warm" ? "Moderate Priority — Several areas need improvement" : "Low Priority — Your security posture is in good shape"}
+                {priority.band === "Hot" ? "High Priority - Immediate attention recommended for your security" : priority.band === "Warm" ? "Moderate Priority - Several areas need improvement" : "Low Priority - Your security posture is in good shape"}
               </div>
               <div className="mt-2 text-muted-foreground">
                 Based on your business profile, critical gaps identified, and external exposure.
@@ -424,7 +424,7 @@ export function ResultsPhase() {
                               : "var(--danger)",
                     }}
                   >
-                    {c.value == null ? "—" : `${c.value}%`}
+                    {c.value == null ? "-" : `${c.value}%`}
                   </span>
                 </div>
                 <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-[color:var(--navy)]/8">

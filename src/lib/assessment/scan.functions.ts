@@ -235,7 +235,7 @@ export const sendReportEmail = createServerFn({ method: "POST" })
 
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #111;">
-        <h2>Your Shield Score Report — ${data.business}</h2>
+        <h2>Your Shield Score Report - ${data.business}</h2>
         <p>Hi ${data.name},</p>
         <p>Thank you for completing the Shield Score assessment. Your current cyber risk score is <strong>${data.score}/100</strong> (${data.band}).</p>
         <p>Your full executive report details your critical security gaps and provides actionable steps to secure your business.</p>

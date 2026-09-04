@@ -98,7 +98,7 @@ export function computeScore(
   }
   const base = denominator > 0 ? (numerator / denominator) * 100 : 0;
 
-  // Scan penalties — only for verified findings
+  // Scan penalties - only for verified findings
   let penalties = 0;
   if (scan) {
     if (!scan.spf) penalties += 6;
@@ -308,7 +308,7 @@ export function buildRecommendations(
       priority: "Critical",
       category: "Identity & Email",
       impact:
-        "One licence closes several gaps at once — email, identity, MFA, and endpoint protection.",
+        "One licence closes several gaps at once - email, identity, MFA, and endpoint protection.",
       why: `One move covers several of these: ${covered.join(", ")}. Business Premium bundles the controls most SMBs are missing today.`,
       fix: "Move email to Microsoft 365 Business Premium, enforce MFA, and deploy Defender for Business to every device.",
       diyGuide: "guide-mfa",
@@ -332,7 +332,7 @@ export function buildRecommendations(
     cards.push({
       id: "backup",
       order: 2,
-      title: "Make your backups real — separate and tested",
+      title: "Make your backups real - separate and tested",
       priority: "Critical",
       category: "Resilience",
       impact:
@@ -377,7 +377,7 @@ export function buildRecommendations(
     cards.push({
       id: "assets",
       order: 5,
-      title: "Start with a simple asset list — free Cyber Starter Kit",
+      title: "Start with a simple asset list - free Cyber Starter Kit",
       priority: "Medium",
       category: "Governance",
       impact: "You cannot protect what you cannot see.",
@@ -396,7 +396,7 @@ export function buildRecommendations(
       category: "Endpoint",
       impact:
         "Modern EDR stops ransomware, malware, and living-off-the-land attacks that antivirus alone misses.",
-      why: "Every laptop, desktop and server needs continuous protection — not just the ones you remember.",
+      why: "Every laptop, desktop and server needs continuous protection - not just the ones you remember.",
       fix: "Deploy a modern EDR (Defender for Business, SentinelOne, CrowdStrike) to 100% of devices.",
       diyGuide: "guide-edr",
     });
@@ -456,7 +456,7 @@ export function buildRecommendations(
       category: "Infrastructure",
       impact:
         "External services facing the internet are targeted continuously. An annual pen test finds what scanners miss.",
-      why: "You have exposed services or sensitive data — a periodic external test validates the controls actually work.",
+      why: "You have exposed services or sensitive data - a periodic external test validates the controls actually work.",
       fix: "Book an annual external penetration test and remediate high/critical findings within 30 days.",
       diyGuide: "guide-pentest",
     });
@@ -545,7 +545,7 @@ export function buildRecommendations(
       priority: "Medium",
       category: "Endpoint",
       impact:
-        "Remote and BYOD devices are outside your office network — they need explicit protection.",
+        "Remote and BYOD devices are outside your office network - they need explicit protection.",
       why: "Without policies and device protection, personal laptops can bring malware straight into your business data.",
       fix: "Publish a remote-work policy, require MFA + EDR on any device used for work.",
       diyGuide: "guide-remote",
@@ -600,7 +600,7 @@ export function computeND(
   if (!authority) {
     return {
       qualified: false,
-      reason: "Not the decision-maker — nurture first",
+      reason: "Not the decision-maker - nurture first",
       gate1Pass: true,
       gate2Pass: false,
       gate3Pass: worthIt,
@@ -609,7 +609,7 @@ export function computeND(
   if (!worthIt) {
     return {
       qualified: false,
-      reason: "Already in good shape — scan not a priority",
+      reason: "Already in good shape - scan not a priority",
       gate1Pass: true,
       gate2Pass: true,
       gate3Pass: false,

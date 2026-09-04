@@ -211,7 +211,7 @@ export const SCAN_STEPS: ScanStep[] = [
         ? { ok: "skip", text: "Not Checked" }
         : {
             ok: r.banner ? "warn" : "pass",
-            text: r.banner ? `Version Disclosed — ${r.banner}` : "No Version Disclosure",
+            text: r.banner ? `Version Disclosed - ${r.banner}` : "No Version Disclosure",
           },
   },
   {
