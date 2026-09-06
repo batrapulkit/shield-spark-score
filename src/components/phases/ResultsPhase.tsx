@@ -189,7 +189,7 @@ export function ResultsPhase() {
             ) : (
               <form onSubmit={handleSendEmail} className="mt-6">
                 <p className="mb-4 text-sm text-muted-foreground">
-                  Send a copy of this executive report and recommended next steps to your inbox.
+                  Thanks for connecting with us at Secure Brampton! Send a copy of this executive report and recommended next steps to your inbox.
                 </p>
                 <label className="block">
                   <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -300,7 +300,7 @@ export function ResultsPhase() {
               </div>
               <div>
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                  Congratulations
+                  Secure Brampton Exclusive Offer
                 </div>
                 <div className="mt-1 text-xl font-semibold sm:text-2xl">
                   You qualify for a complimentary Internal Network Discovery Assessment.
@@ -667,7 +667,7 @@ export function ResultsPhase() {
             }}
           >
             <CalendarCheck size={22} className="shrink-0" />
-            <span>Book Free Security Consultation</span>
+            <span>Book Your Secure Brampton Follow-Up</span>
           </a>
         </div>
       </motion.div>

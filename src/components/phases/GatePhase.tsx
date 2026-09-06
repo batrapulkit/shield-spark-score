@@ -132,7 +132,7 @@ export function GatePhase() {
           Almost there
         </div>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Where should we send your Shield Score report?
+          Where should we send your Secure Brampton summary report?
         </h1>
         <p className="mt-2 max-w-xl text-muted-foreground">
           We'll unlock your full dashboard, tailored recommendations,
@@ -234,7 +234,7 @@ export function GatePhase() {
             className="mt-1 h-4 w-4 accent-[color:var(--cyan)]"
           />
           <span>
-            I consent to Shield Identity contacting me about my results (CASL
+            I consent to Shield Identity contacting me about my Secure Brampton results (CASL
             compliant, unsubscribe any time).
           </span>
         </label>

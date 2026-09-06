@@ -134,14 +134,14 @@ export function ProfilePhase() {
           </div>
 
           <div className="mt-8 border-t border-ink/10 pt-6 text-center text-xs text-muted-foreground font-sans">
-            Confused about your business security setup?{" "}
+            Need advice while at the event?{" "}
             <a
               href={s.calendlyUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[color:var(--cyan-glow)] font-semibold hover:underline inline-flex items-center gap-0.5"
             >
-              Book a 15-min call for guidance &rarr;
+              Find us at the Secure Brampton booth or book a follow-up &rarr;
             </a>
           </div>
         </motion.div>

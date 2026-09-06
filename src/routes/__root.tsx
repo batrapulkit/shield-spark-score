@@ -74,15 +74,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Shield Score - Cybersecurity Assessment for SMBs | Shield Identity" },
+      { title: "Shield Score - Secure Brampton Edition | Shield Identity" },
       {
         name: "description",
         content:
           "Discover your business cyber risk in under 3 minutes. Get an instant Shield Score based on your website, email security, and cybersecurity practices.",
       },
       { name: "author", content: "Shield Identity" },
-      { property: "og:title", content: "Shield Score - Cybersecurity Assessment for SMBs | Shield Identity" },
-      { name: "twitter:title", content: "Shield Score - Cybersecurity Assessment for SMBs | Shield Identity" },
+      { property: "og:title", content: "Shield Score - Secure Brampton Edition | Shield Identity" },
+      { name: "twitter:title", content: "Shield Score - Secure Brampton Edition | Shield Identity" },
       { property: "og:description", content: "Discover your business cyber risk in under 3 minutes. Get an instant Shield Score based on your website, email security, and cybersecurity practices." },
       { name: "twitter:description", content: "Discover your business cyber risk in under 3 minutes. Get an instant Shield Score based on your website, email security, and cybersecurity practices." },
       { property: "og:type", content: "website" },

@@ -11,7 +11,7 @@ import { ResultsPhase } from "@/components/phases/ResultsPhase";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Shield Score - Cybersecurity Assessment for SMBs | Shield Identity" },
+      { title: "Shield Score - Secure Brampton Edition | Shield Identity" },
       {
         name: "description",
         content:
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "Shield Score - Cybersecurity Assessment for SMBs | Shield Identity",
+        content: "Shield Score - Secure Brampton Edition | Shield Identity",
       },
       {
         property: "og:description",

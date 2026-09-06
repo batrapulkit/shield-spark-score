@@ -142,7 +142,7 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
             Want to go deeper?
           </h2>
           <p className="mt-3 text-base text-muted-foreground leading-relaxed">
-            You've completed the baseline security questions. You can unlock advanced recommendations and double the accuracy of your Shield Score by answering a few optional deep-dive questions now.
+            You've completed the Secure Brampton baseline scan. You can unlock advanced recommendations and double the accuracy of your Shield Score by answering a few optional deep-dive questions now.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
@@ -264,7 +264,7 @@ export function QuestionsPhase({ mode, onDone, onBack }: Props) {
               rel="noopener noreferrer"
               className="text-[color:var(--cyan-glow)] font-semibold hover:underline inline-flex items-center gap-0.5"
             >
-              Speak to a security analyst now &rarr;
+              Find a Shield expert at the booth, or book a follow-up &rarr;
             </a>
           </div>
         </motion.div>

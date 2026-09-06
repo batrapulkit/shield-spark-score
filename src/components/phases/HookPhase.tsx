@@ -53,8 +53,8 @@ export function HookPhase() {
             transition={{ delay: 0.05 }}
             className="mt-5 text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl lg:text-6xl"
           >
-            Discover your business{" "}
-            <span className="text-gradient-cyan">cyber risk</span> in under 3 minutes.
+            Know where you stand.{" "}
+            <span className="text-gradient-cyan">Fix what matters.</span>
           </motion.h1>
 
           <motion.p
@@ -63,9 +63,7 @@ export function HookPhase() {
             transition={{ delay: 0.12 }}
             className="mt-5 max-w-xl text-lg text-muted-foreground"
           >
-            Get an instant Shield Score based on your website, email security, and
-            cybersecurity practices - built for Canadian SMBs, no installation
-            required.
+            A free cyber risk assessment, a one-on-one walkthrough and a security roadmap for your business — built in Brampton by Shield Identity and the Brampton Board of Trade.
           </motion.p>
 
           <motion.div
@@ -133,7 +131,7 @@ export function HookPhase() {
                   "0 20px 40px -18px color-mix(in oklab, var(--cyan) 70%, transparent)",
               }}
             >
-              Scan My Business
+              Start the 10-minute assessment
               <ArrowRight size={18} />
             </motion.button>
           </motion.div>
@@ -142,7 +140,7 @@ export function HookPhase() {
             {[
               { icon: ServerOff, label: "Passive Scan Only" },
               { icon: Lock, label: "No Installation Required" },
-              { icon: MapPin, label: "Trusted by Canadian Businesses" },
+              { icon: MapPin, label: "Exclusive for Secure Brampton" },
             ].map((b) => (
               <div
                 key={b.label}
@@ -171,10 +169,10 @@ export function HookPhase() {
           
           <div className="space-y-1 text-center md:text-left">
             <h4 className="text-lg sm:text-xl font-semibold text-foreground">
-              Prefer a live walkthrough with a security expert?
+              Want the full Secure Brampton experience?
             </h4>
             <p className="text-sm text-muted-foreground max-w-xl">
-              Skip the automated scanner and book a direct 1-on-1 assessment check. We'll crawl your site and explain your security posture live.
+              Every result comes with a free walkthrough and roadmap. Skip the scanner and book your 1-on-1 assessment session with a Shield Identity consultant directly.
             </p>
           </div>
           <a
@@ -186,7 +184,7 @@ export function HookPhase() {
               background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))",
             }}
           >
-            Book Free Briefing Directly
+            Book Your Walkthrough
           </a>
         </div>
       </motion.div>

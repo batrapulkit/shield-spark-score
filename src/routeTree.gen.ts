@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DiyGuideIdRouteImport } from './routes/diy.$guideId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiyGuideIdRoute = DiyGuideIdRouteImport.update({
   id: '/diy/$guideId',
   path: '/diy/$guideId',
@@ -32,30 +38,34 @@ const DiyGuideIdRoute = DiyGuideIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/faq': typeof FaqRoute
   '/diy/$guideId': typeof DiyGuideIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/faq': typeof FaqRoute
   '/diy/$guideId': typeof DiyGuideIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/faq': typeof FaqRoute
   '/diy/$guideId': typeof DiyGuideIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/diy/$guideId'
+  fullPaths: '/' | '/admin' | '/faq' | '/diy/$guideId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/diy/$guideId'
-  id: '__root__' | '/' | '/admin' | '/diy/$guideId'
+  to: '/' | '/admin' | '/faq' | '/diy/$guideId'
+  id: '__root__' | '/' | '/admin' | '/faq' | '/diy/$guideId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  FaqRoute: typeof FaqRoute
   DiyGuideIdRoute: typeof DiyGuideIdRoute
 }
 
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/diy/$guideId': {
       id: '/diy/$guideId'
       path: '/diy/$guideId'
@@ -88,6 +105,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  FaqRoute: FaqRoute,
   DiyGuideIdRoute: DiyGuideIdRoute,
 }
 export const routeTree = rootRouteImport
