@@ -121,6 +121,7 @@ export async function createZohoLead(
     `=== CRITICAL COMPLIANCE DETAILS ===`,
     `Consent to Contact: ${lead.consent ? "Yes" : "No"}`,
     `Is Decision Maker: ${lead.decisionMaker}`,
+    `Lead Source Domain: ${lead.sourceDomain || "unknown"}`,
     extraEmails && extraEmails.length > 0
       ? `Additional Emails for Alerts: ${extraEmails.join(", ")}`
       : null,

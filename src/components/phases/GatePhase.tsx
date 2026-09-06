@@ -82,7 +82,8 @@ export function GatePhase() {
       s.profile.it === "No one, really");
 
   const submit = async (v: FormValues) => {
-    const lead: Lead = { ...v };
+    const sourceDomain = typeof window !== "undefined" ? window.location.hostname : "unknown";
+    const lead: Lead = { ...v, sourceDomain };
     s.setLead(lead);
 
     let currentScan = s.scan;

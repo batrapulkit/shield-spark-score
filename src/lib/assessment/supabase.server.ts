@@ -89,7 +89,7 @@ export async function saveSubmissionToDb(
     consent: lead.consent,
     score: scoreResult.final,
     scan_result: scan,
-    answers: answers,
+    answers: { ...answers, _metadata_source_domain: lead.sourceDomain || "unknown" },
     profile: profile,
     created_at: new Date().toISOString()
   };

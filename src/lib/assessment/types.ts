@@ -112,6 +112,7 @@ export interface Lead {
   role: string;
   decisionMaker: DecisionMaker;
   consent: boolean;
+  sourceDomain?: string;
 }
 
 export type Phase = "hook" | "scan" | "profile" | "quick" | "gate" | "results";
