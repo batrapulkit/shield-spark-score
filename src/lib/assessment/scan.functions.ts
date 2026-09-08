@@ -251,7 +251,7 @@ export const sendReportEmail = createServerFn({ method: "POST" })
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "Shield Identity <reports@shield-identity.com>",
+          from: "Shield Identity <reports@shieldidentity.net>",
           to: data.email,
           subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
           html,
