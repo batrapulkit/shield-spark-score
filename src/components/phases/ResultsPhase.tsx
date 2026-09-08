@@ -15,7 +15,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   Bar,
   BarChart,
@@ -69,6 +69,27 @@ export function ResultsPhase() {
     () => computeScore(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
     [s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions],
   );
+
+  // Auto-send the email when the report is generated.
+  useEffect(() => {
+    if (!s.lead?.email) return;
+    
+    // We tie the cache key to the score, so if they do a deep dive and update their score, we send them the updated email.
+    const autoSentKey = `shield_auto_email_${s.lead.email}_${score.final}`;
+    if (sessionStorage.getItem(autoSentKey)) return;
+    
+    sessionStorage.setItem(autoSentKey, "true");
+    
+    sendReportEmail({
+      data: {
+        email: s.lead.email,
+        score: score.final,
+        band: score.band,
+        business: s.lead.business || s.website || "Your Business",
+        name: s.lead.name || "There",
+      },
+    }).catch(err => console.error("Failed to auto-send email:", err));
+  }, [s.lead, s.website, score.final, score.band]);
   const flags = useMemo(
     () => computeFlags(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
     [s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions],

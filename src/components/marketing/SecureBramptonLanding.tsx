@@ -4,6 +4,53 @@ import React, { useEffect, useState } from "react";
 
 export function SecureBramptonLanding() {
   const [showCta, setShowCta] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState("");
+  const [formStatus, setFormStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+
+  const openRegisterModal = (courseName: string) => {
+    setSelectedCourse(courseName);
+    setFormStatus('idle');
+    setIsRegisterModalOpen(true);
+  };
+
+  const closeRegisterModal = () => {
+    setIsRegisterModalOpen(false);
+  };
+
+  const handleRegisterSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFormStatus('submitting');
+    
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const business = formData.get("business") as string;
+
+    try {
+      await submitToCrm({
+        data: {
+          lead: {
+            name,
+            email,
+            business,
+            phone: "",
+            role: "Event Registration",
+            decisionMaker: "Yes, I decide", // Default decision maker so it isn't completely empty
+            consent: true,
+            sourceDomain: `Secure Brampton Session: ${selectedCourse}`
+          },
+          profile: {},
+          answers: {},
+          scan: null
+        }
+      });
+    } catch(err) {
+      console.error("Failed to submit registration", err);
+    }
+    
+    setFormStatus('success');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -269,11 +316,11 @@ export function SecureBramptonLanding() {
     <h2>Secure Brampton Sessions</h2>
     <p className="lede" style={{marginTop:'18px'}}>This is where the learning happens: live, free, and in plain English. What these things are, who asks for them, and how they help you win work. Register your interest and we'll email you the date as soon as each session is scheduled.</p>
     <div className="list">
-      <div className="row"><time>Coming soon</time><div><b>SOC 2 Type 2, explained for business owners</b><span>What it is, who asks for it, what it costs</span></div><a className="btn btn-o" href="mailto:hello@securebrampton.ca?subject=Register%3A%20SOC%202%20session">Register</a></div>
-      <div className="row"><time>Coming soon</time><div><b>CPCSC: the certification defence suppliers can't ignore</b><span>Level 1 is live in contracts — what to do this quarter</span></div><a className="btn btn-o" href="mailto:hello@securebrampton.ca?subject=Register%3A%20CPCSC%20session">Register</a></div>
-      <div className="row"><time>Coming soon</time><div><b>PCI DSS without the jargon</b><span>If you take card payments, this is you</span></div><a className="btn btn-o" href="mailto:hello@securebrampton.ca?subject=Register%3A%20PCI%20DSS%20session">Register</a></div>
-      <div className="row"><time>Coming soon</time><div><b>What a penetration test actually finds</b><span>And why your insurer cares</span></div><a className="btn btn-o" href="mailto:hello@securebrampton.ca?subject=Register%3A%20Penetration%20testing%20session">Register</a></div>
-      <div className="row"><time>Coming soon</time><div><b>Ransomware: the first 24 hours</b><span>What to do, what not to do</span></div><a className="btn btn-o" href="mailto:hello@securebrampton.ca?subject=Register%3A%20Ransomware%20session">Register</a></div>
+      <div className="row"><time>Coming soon</time><div><b>SOC 2 Type 2, explained for business owners</b><span>What it is, who asks for it, what it costs</span></div><button className="btn btn-o" onClick={(e) => { e.preventDefault(); openRegisterModal('SOC 2 Type 2, explained for business owners'); }}>Register</button></div>
+      <div className="row"><time>Coming soon</time><div><b>CPCSC: the certification defence suppliers can't ignore</b><span>Level 1 is live in contracts — what to do this quarter</span></div><button className="btn btn-o" onClick={(e) => { e.preventDefault(); openRegisterModal("CPCSC: the certification defence suppliers can't ignore"); }}>Register</button></div>
+      <div className="row"><time>Coming soon</time><div><b>PCI DSS without the jargon</b><span>If you take card payments, this is you</span></div><button className="btn btn-o" onClick={(e) => { e.preventDefault(); openRegisterModal('PCI DSS without the jargon'); }}>Register</button></div>
+      <div className="row"><time>Coming soon</time><div><b>What a penetration test actually finds</b><span>And why your insurer cares</span></div><button className="btn btn-o" onClick={(e) => { e.preventDefault(); openRegisterModal('What a penetration test actually finds'); }}>Register</button></div>
+      <div className="row"><time>Coming soon</time><div><b>Ransomware: the first 24 hours</b><span>What to do, what not to do</span></div><button className="btn btn-o" onClick={(e) => { e.preventDefault(); openRegisterModal('Ransomware: the first 24 hours'); }}>Register</button></div>
     </div>
   </div>
 </section>
@@ -333,12 +380,55 @@ export function SecureBramptonLanding() {
     </div>
     <div className="fine">
       <span>SecureBrampton.ca · <a href="mailto:hello@securebrampton.ca">hello@securebrampton.ca</a> · Brampton, Ontario</span>
-      <span><a href="https://shield-identity.com">shield-identity.com</a> · <a href="https://bramptonbot.com">bramptonbot.com</a> · <a href="privacy.html">How we handle your information</a></span>
+      <span><a href="https://shield-identity.com">shield-identity.com</a> · <a href="https://bramptonbot.com">bramptonbot.com</a> · <a href="https://shield-identity.com/privacy" target="_blank" rel="noreferrer">How we handle your information</a></span>
     </div>
   </div>
 </footer>
       
       <Link className={`float-cta ${showCta ? 'show' : ''}`} to="/assessment">Get your free Cyber Score →</Link>
+      {/* Registration Modal */}
+      <div className={`modal-overlay ${isRegisterModalOpen ? 'open' : ''}`}>
+        <div className="modal">
+          <button className="close" onClick={closeRegisterModal} type="button" aria-label="Close modal">&times;</button>
+          
+          {formStatus === 'success' ? (
+            <div className="success">
+              <svg fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+              <h3>Registration Recorded</h3>
+              <p>We've successfully recorded your interest in <strong>{selectedCourse}</strong>. We'll be in touch soon.</p>
+              <button className="btn btn-p" onClick={closeRegisterModal} type="button" style={{width: '100%'}}>Close</button>
+            </div>
+          ) : (
+            <>
+              <h3>Register for Session</h3>
+              <form onSubmit={handleRegisterSubmit}>
+                <div className="field">
+                  <label>Session</label>
+                  <input type="text" value={selectedCourse} readOnly style={{backgroundColor: '#e9ecef', color: '#6c757d', borderColor: '#ced4da'}} />
+                </div>
+                <div className="field">
+                  <label>Full Name</label>
+                  <input name="name" type="text" required placeholder="Jane Doe" />
+                </div>
+                <div className="field">
+                  <label>Work Email</label>
+                  <input name="email" type="email" required placeholder="jane@company.com" />
+                </div>
+                <div className="field">
+                  <label>Company Name</label>
+                  <input name="business" type="text" required placeholder="Company Ltd." />
+                </div>
+                <div className="acts">
+                  <button type="button" className="btn btn-o" onClick={closeRegisterModal}>Cancel</button>
+                  <button type="submit" className="btn btn-p" disabled={formStatus === 'submitting'}>
+                    {formStatus === 'submitting' ? 'Recording...' : 'Register'}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

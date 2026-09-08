@@ -288,3 +288,23 @@
 .secure-brampton-landing .page .src { margin-top: 40px; font-size: 13px; color: var(--mute); }
 .secure-brampton-landing .crumb { font-size: 14px; color: var(--mute); }
 .secure-brampton-landing .crumb a { color: var(--mute); }
+
+/* modal */
+.secure-brampton-landing .modal-overlay { position: fixed; inset: 0; background: rgba(14,27,86,.4); backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.secure-brampton-landing .modal-overlay.open { opacity: 1; pointer-events: auto; }
+.secure-brampton-landing .modal { background: #fff; width: 100%; max-width: 480px; border-radius: 18px; box-shadow: 0 20px 40px rgba(14,27,86,.15); padding: 32px; position: relative; transform: translateY(10px); transition: transform .2s; }
+.secure-brampton-landing .modal-overlay.open .modal { transform: translateY(0); }
+.secure-brampton-landing .modal .close { position: absolute; right: 20px; top: 20px; width: 32px; height: 32px; border: 0; background: var(--lav); color: var(--navy); border-radius: 50%; font-size: 20px; font-weight: 600; cursor: pointer; display: grid; place-items: center; line-height: 1; }
+.secure-brampton-landing .modal .close:hover { background: #e0d8ff; }
+.secure-brampton-landing .modal h3 { font-size: 24px; margin-bottom: 24px; color: var(--navy); }
+.secure-brampton-landing .modal .field { margin-bottom: 16px; }
+.secure-brampton-landing .modal label { display: block; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.secure-brampton-landing .modal input, .secure-brampton-landing .modal select { width: 100%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; font-family: inherit; font-size: 15px; color: var(--ink); background: #fafafa; }
+.secure-brampton-landing .modal input:focus, .secure-brampton-landing .modal select:focus { outline: none; border-color: var(--purple); background: #fff; box-shadow: 0 0 0 3px var(--lav); }
+.secure-brampton-landing .modal .acts { margin-top: 24px; display: flex; gap: 12px; }
+.secure-brampton-landing .modal .acts .btn { flex: 1; border: none; cursor: pointer; }
+.secure-brampton-landing .modal .acts .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.secure-brampton-landing .modal .success { text-align: center; padding: 20px 0; }
+.secure-brampton-landing .modal .success svg { width: 56px; height: 56px; color: #10b981; margin: 0 auto 16px; }
+.secure-brampton-landing .modal .success h3 { margin-bottom: 8px; }
+.secure-brampton-landing .modal .success p { color: var(--mute); font-size: 15px; margin-bottom: 24px; }
