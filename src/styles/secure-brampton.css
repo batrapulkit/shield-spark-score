@@ -176,8 +176,8 @@
 .secure-brampton-landing .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
 .secure-brampton-landing .logo svg { height: 44px; width: auto; }
 .secure-brampton-landing .nav { gap: 20px; }
-.secure-brampton-landing .logo b { white-space: nowrap; font-size: 21px; color: var(--navy); letter-spacing: -.02em; }
-.secure-brampton-landing .logo small { display: block; font-size: 11px; color: var(--mute); font-weight: 500; }
+.secure-brampton-landing .logo b { white-space: nowrap; font-size: 21px; color: var(--navy); letter-spacing: -.02em; line-height: 1; margin: 0; }
+.secure-brampton-landing .logo small { display: block; font-size: 11px; color: var(--mute); font-weight: 500; line-height: 1; margin: 0; }
 .secure-brampton-landing .soon { display: inline-block; background: #fff3d6; color: #7a4b00; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 999px; vertical-align: middle; margin-left: 8px; border: 1px solid #f4d48f; }
 .secure-brampton-landing .tier.t2 { opacity: .94; }
 .secure-brampton-landing .btn[aria-disabled="true"] { background: #ececf3; color: #7c7f95; border-color: #ececf3; cursor: default; }
