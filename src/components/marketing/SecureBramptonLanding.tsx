@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import "../../styles/secure-brampton.css";
 import React, { useEffect, useState } from "react";
+import { submitToCrm } from "@/lib/assessment/scan.functions";
 
 export function SecureBramptonLanding() {
   const [showCta, setShowCta] = useState(false);
@@ -26,6 +27,7 @@ export function SecureBramptonLanding() {
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const business = formData.get("business") as string;
+    const phone = (formData.get("phone") as string) || "";
 
     try {
       await submitToCrm({
@@ -34,7 +36,7 @@ export function SecureBramptonLanding() {
             name,
             email,
             business,
-            phone: "",
+            phone,
             role: "Event Registration",
             decisionMaker: "Yes, I decide", // Default decision maker so it isn't completely empty
             consent: true,
@@ -69,7 +71,7 @@ export function SecureBramptonLanding() {
 
   return (
     <div className="secure-brampton-landing">
-      <div className="announce"><b>Launching Thursday, September 10, 2026</b> at Brampton Venture Expo, The Rose Brampton · <a href="#launch">find us at the Brampton Board of Trade booth</a></div>
+      <div className="announce"><b>Launching Thursday, September 10, 2026</b> at Brampton Venture Expo, The Rose Brampton · <a href="https://bramptonbot.com" target="_blank" rel="noopener noreferrer">find us at the Brampton Board of Trade booth</a></div>
 <header>
   <div className="wrap nav">
     <a className="logo" href="/"><svg style={{height:'44px', width:'auto'}} role="img" aria-label="Secure Brampton" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 112">
@@ -147,7 +149,7 @@ export function SecureBramptonLanding() {
         <div className="launch-k">Launch</div>
         <div className="launch-d">Thursday, September 10, 2026</div>
         <div className="launch-v">Brampton Venture Expo · The Rose Brampton, 1 Theatre Lane · 10 AM to 6 PM</div>
-        <div className="launch-v" style={{marginTop: '8px'}}>Come to the Brampton Board of Trade booth: take the assessment on the spot, meet the team, and spin the wheel.</div>
+        <div className="launch-v" style={{marginTop: '8px'}}>Come to the <a href="https://bramptonbot.com" target="_blank" rel="noopener noreferrer">Brampton Board of Trade booth</a>: take the assessment on the spot, meet the team, and spin the wheel.</div>
         <a className="btn btn-p" href="/assessment" style={{marginTop:'18px'}}>Take the assessment now</a>
       </div>
     </div>

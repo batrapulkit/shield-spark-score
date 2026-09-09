@@ -1,0 +1,8 @@
+- [ ] Update SecureBramptonLanding.tsx links to /assessment
+- [ ] Replace Calendly URLs with /contact
+- [ ] Add lead-capture dialog component with form (name, email, business, phone)
+- [ ] Wire form submission to submitToCrm
+- [ ] Update email strings to hello@shieldorientedia.ca
+- [ ] Ensure floating CTA uses dialog and routes correctly
+- [ ] Verify Brampton Board of Trade link remains
+- [ ] Run dev server and test manually
