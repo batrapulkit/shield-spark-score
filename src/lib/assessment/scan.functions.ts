@@ -45,6 +45,7 @@ export const runBreachCheck = createServerFn({ method: "POST" })
   });
 
 import { createZohoLead } from "./zoho.server";
+import { computeScore, computeFlags, executiveSummary } from "./engine";
 
 export const submitToCrm = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
@@ -61,8 +62,10 @@ export const submitToCrm = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     let dbSuccess = false;
     let crmSuccess = false;
+    let emailSuccess = false;
     let dbResult = null;
     let crmResult = null;
+    let emailResult = null;
     
     // Check if CRM integration is toggled globally
     let isCrmSyncEnabled = true;
@@ -115,9 +118,44 @@ export const submitToCrm = createServerFn({ method: "POST" })
       crmResult = { status: "skipped", message: "CRM Sync disabled in system settings" };
     }
 
+    // Automatically send executive report email upon submission
+    if (data.lead && data.lead.email) {
+      try {
+        const scoreObj = computeScore(
+          data.profile || {},
+          data.answers || {},
+          data.scan || null,
+          customQuick,
+          customDeep
+        );
+        const flagsObj = computeFlags(
+          data.profile || {},
+          data.answers || {},
+          data.scan || null,
+          customQuick,
+          customDeep
+        );
+        const summaryText = executiveSummary(scoreObj.final, scoreObj.band, flagsObj);
+
+        emailResult = await sendReportEmailDirectly({
+          email: data.lead.email,
+          score: scoreObj.final,
+          band: scoreObj.band,
+          business: data.lead.business || (data.scan?.domain ? data.scan.domain : "Your Business"),
+          name: data.lead.name || "Valued Business Leader",
+          summary: summaryText,
+        });
+        emailSuccess = true;
+        console.log(`[Auto-Email] Executive report automatically sent to ${data.lead.email}`);
+      } catch (emailErr) {
+        console.error("[Auto-Email] Failed to automatically send executive report email:", emailErr);
+      }
+    }
+
     return {
       db: { success: dbSuccess, data: dbResult },
       crm: { success: crmSuccess, data: crmResult },
+      email: { success: emailSuccess, data: emailResult },
     };
   });
 
@@ -214,6 +252,174 @@ export const deleteSubmissionRecord = createServerFn({ method: "POST" })
     return deleteSubmission(data.email);
   });
 
+interface ReportEmailParams {
+  email: string;
+  score: number;
+  band: string;
+  business: string;
+  name: string;
+  summary?: string;
+}
+
+async function sendReportEmailDirectly(data: ReportEmailParams) {
+  const RESEND_API_KEY = process.env.RESEND_API_KEY || process.env.RESEND_API;
+  if (!RESEND_API_KEY) {
+    console.warn("RESEND_API_KEY / RESEND_API not configured. Simulating report email send.");
+    return { success: true, simulated: true };
+  }
+
+  const bandColor =
+    data.band === "Resilient"
+      ? "#10B981"
+      : data.band === "Developing"
+        ? "#F59E0B"
+        : "#EF4444";
+
+  const bandLabel =
+    data.band === "Resilient"
+      ? "Low Cyber Risk · Strong Security Baseline"
+      : data.band === "Developing"
+        ? "Medium Cyber Risk · Priority Controls Recommended"
+        : "High Cyber Risk · Action Required";
+
+  const defaultSummary = data.summary || 
+    `Your assessment indicates a cyber risk score of ${data.score}/100 (${data.band}). Key recommendations have been identified to harden your posture.`;
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Your Shield Score Executive Report</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #0d1117; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #e6edf3;">
+      <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin: 0 auto; background-color: #161b22; border-radius: 16px; overflow: hidden; border: 1px solid #30363d; margin-top: 24px; margin-bottom: 24px;">
+        <!-- Header Banner -->
+        <tr>
+          <td style="padding: 32px 32px 24px 32px; background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); border-bottom: 1px solid #30363d;">
+            <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #38bdf8; margin-bottom: 8px;">
+              Shield Identity · Executive Report
+            </div>
+            <h1 style="font-size: 24px; font-weight: 700; color: #ffffff; margin: 0 0 4px 0;">
+              ${data.business} Cyber Risk Assessment
+            </h1>
+            <div style="font-size: 14px; color: #8b949e;">
+              Prepared for ${data.name} · ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Score Badge Box -->
+        <tr>
+          <td style="padding: 32px;">
+            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #21262d; border-radius: 12px; border: 1px solid #30363d; padding: 24px;">
+              <tr>
+                <td align="center" style="padding-bottom: 16px;">
+                  <div style="display: inline-block; width: 90px; height: 90px; border-radius: 50%; border: 6px solid ${bandColor}; line-height: 90px; text-align: center; font-size: 32px; font-weight: 800; color: #ffffff;">
+                    ${data.score}
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
+                  <div style="font-size: 18px; font-weight: 700; color: ${bandColor}; margin-bottom: 4px;">
+                    ${data.band} (${data.score}/100)
+                  </div>
+                  <div style="font-size: 13px; color: #8b949e;">
+                    ${bandLabel}
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Executive Summary -->
+        <tr>
+          <td style="padding: 0 32px 24px 32px;">
+            <h2 style="font-size: 16px; font-weight: 700; color: #ffffff; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 1px;">
+              Executive Summary
+            </h2>
+            <div style="background-color: #21262d; border-left: 4px solid #38bdf8; border-radius: 0 8px 8px 0; padding: 16px 20px; font-size: 14px; line-height: 1.6; color: #c9d1d9;">
+              ${defaultSummary}
+            </div>
+          </td>
+        </tr>
+
+        <!-- Key Next Steps & CTA -->
+        <tr>
+          <td style="padding: 0 32px 32px 32px;">
+            <div style="background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.02) 100%); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 24px; text-align: center;">
+              <h3 style="font-size: 18px; font-weight: 700; color: #ffffff; margin: 0 0 8px 0;">
+                Schedule Your Free 15-Min Consultation
+              </h3>
+              <p style="font-size: 14px; color: #8b949e; margin: 0 0 20px 0; line-height: 1.5;">
+                Walk through your full report with a Shield Identity specialist, review your critical security gaps, and prioritize your remediation roadmap.
+              </p>
+              <a href="https://calendly.com/shieldidentity-ca/consultation" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); color: #ffffff; text-decoration: none; font-size: 14px; font-weight: 700; padding: 14px 28px; border-radius: 10px; box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);">
+                Schedule Consultation &rarr;
+              </a>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding: 24px 32px; background-color: #0d1117; border-top: 1px solid #30363d; text-align: center; font-size: 12px; color: #8b949e;">
+            <div>Shield Identity · Secure Brampton Assessment Engine</div>
+            <div style="margin-top: 4px;">This automated executive report was generated for ${data.email}</div>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Attempt sending via Resend API, with domain fallback if custom domain is unverified
+  const sendEmailRequest = async (fromAddress: string) => {
+    return await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: data.email,
+        subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
+        html,
+      }),
+    });
+  };
+
+  const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <reports@shieldidentity.net>";
+  const fallbackFrom = "Shield Identity <onboarding@resend.dev>";
+
+  try {
+    let res = await sendEmailRequest(primaryFrom);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.warn(`Primary Resend email send (${primaryFrom}) failed:`, errText);
+      
+      // If primary from domain is not verified, attempt fallback to onboarding address
+      if (errText.includes("validation_error") || errText.includes("domain") || res.status === 403 || res.status === 422) {
+        console.log(`Retrying report email via fallback sender (${fallbackFrom})...`);
+        res = await sendEmailRequest(fallbackFrom);
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+      } else {
+        throw new Error(errText);
+      }
+    }
+    return { success: true };
+  } catch (err) {
+    console.error("Failed to send report email via Resend:", err);
+    throw err;
+  }
+}
+
 export const sendReportEmail = createServerFn({ method: "POST" })
   .validator((data: unknown) =>
     z
@@ -223,48 +429,11 @@ export const sendReportEmail = createServerFn({ method: "POST" })
         band: z.string(),
         business: z.string(),
         name: z.string(),
+        summary: z.string().optional(),
       })
       .parse(data),
   )
   .handler(async ({ data }) => {
-    const RESEND_API_KEY = process.env.RESEND_API_KEY;
-    if (!RESEND_API_KEY) {
-      console.warn("RESEND_API_KEY not configured. Simulating email send.");
-      return { success: true, simulated: true };
-    }
-
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #111;">
-        <h2>Your Shield Score Report - ${data.business}</h2>
-        <p>Hi ${data.name},</p>
-        <p>Thank you for completing the Shield Score assessment. Your current cyber risk score is <strong>${data.score}/100</strong> (${data.band}).</p>
-        <p>Your full executive report details your critical security gaps and provides actionable steps to secure your business.</p>
-        <p>Best regards,<br/>The Shield Identity Team</p>
-      </div>
-    `;
-
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: "Shield Identity <reports@shieldidentity.net>",
-          to: data.email,
-          subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
-          html,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(await res.text());
-      }
-      return { success: true };
-    } catch (err) {
-      console.error("Failed to send report email:", err);
-      throw new Error("Failed to send email");
-    }
+    return sendReportEmailDirectly(data);
   });
 
