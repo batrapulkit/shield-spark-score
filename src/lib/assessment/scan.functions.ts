@@ -267,8 +267,9 @@ interface ReportEmailParams {
 async function sendReportEmailDirectly(data: ReportEmailParams) {
   const RESEND_API_KEY = process.env.RESEND_API_KEY || process.env.RESEND_API;
   if (!RESEND_API_KEY) {
-    console.warn("RESEND_API_KEY / RESEND_API not configured. Simulating report email send.");
-    return { success: true, simulated: true };
+    const msg = "[Resend Email] RESEND_API_KEY / RESEND_API environment variable is NOT set in Vercel project environment variables. Emails cannot be dispatched.";
+    console.error(msg);
+    return { success: false, reason: "MISSING_ENV_KEY", message: msg };
   }
 
   const bandColor =
@@ -396,7 +397,7 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
     });
   };
 
-  const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <reports@shieldidentity.net>";
+  const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <onboarding@resend.dev>";
   const fallbackFrom = "Shield Identity <onboarding@resend.dev>";
 
   try {
@@ -405,20 +406,23 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
       const errText = await res.text();
       console.warn(`Primary Resend email send (${primaryFrom}) failed:`, errText);
       
-      // If primary from domain is not verified, attempt fallback to onboarding address
-      if (errText.includes("validation_error") || errText.includes("domain") || res.status === 403 || res.status === 422) {
+      // If primary from domain fails, attempt fallback to default onboarding address
+      if (primaryFrom !== fallbackFrom) {
         console.log(`Retrying report email via fallback sender (${fallbackFrom})...`);
         res = await sendEmailRequest(fallbackFrom);
         if (!res.ok) {
-          throw new Error(await res.text());
+          const fallbackErrText = await res.text();
+          console.error("Fallback Resend email send failed:", fallbackErrText);
+          throw new Error(`Resend Error: ${fallbackErrText}`);
         }
       } else {
-        throw new Error(errText);
+        throw new Error(`Resend Error: ${errText}`);
       }
     }
+    console.log(`[Resend Email] Report successfully sent to ${data.email}`);
     return { success: true };
-  } catch (err) {
-    console.error("Failed to send report email via Resend:", err);
+  } catch (err: any) {
+    console.error("Failed to send report email via Resend:", err.message || err);
     throw err;
   }
 }
