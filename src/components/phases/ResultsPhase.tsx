@@ -177,7 +177,22 @@ export function ResultsPhase() {
       <QuestionsPhase
         mode="deep"
         onBack={() => setDeepOpen(false)}
-        onDone={() => setDeepOpen(false)}
+        onDone={() => {
+          setDeepOpen(false);
+          if (s.lead) {
+            import("@/lib/assessment/scan.functions").then(({ submitToCrm }) => {
+              submitToCrm({
+                data: {
+                  lead: s.lead!,
+                  profile: s.profile,
+                  answers: s.answers,
+                  scan: s.scan,
+                  extraEmails: s.extraEmails,
+                },
+              }).catch((err) => console.error("Failed to re-sync deep assessment answers to DB:", err));
+            });
+          }
+        }}
       />
     );
   }
