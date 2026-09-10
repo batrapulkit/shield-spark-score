@@ -8,11 +8,8 @@ import {
   Sparkles,
   TrendingUp,
   ArrowLeft,
-  Mail,
-  Loader2,
-  CheckCircle2,
-  XCircle,
   AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
@@ -59,11 +56,6 @@ const PRIORITY_COLOR: Record<Priority, string> = {
 export function ResultsPhase() {
   const s = useAssessment();
   const [deepOpen, setDeepOpen] = useState(false);
-  const [emailModal, setEmailModal] = useState(false);
-  const [reportEmail, setReportEmail] = useState(s.lead?.email || "");
-  const [emailSending, setEmailSending] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
-  const [emailError, setEmailError] = useState("");
 
   const score = useMemo(
     () => computeScore(s.profile, s.answers, s.scan, s.quickQuestions, s.deepQuestions),
@@ -149,29 +141,6 @@ export function ResultsPhase() {
     ? INDUSTRY_META[s.profile.industry]?.framework
     : null;
 
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!reportEmail) return;
-    setEmailSending(true);
-    setEmailError("");
-    try {
-      await sendReportEmail({
-        data: {
-          email: reportEmail,
-          score: score.final,
-          band: score.band,
-          business: s.lead?.business || s.website || "Your Business",
-          name: s.lead?.name || "There",
-        },
-      });
-      setEmailSent(true);
-    } catch (err) {
-      setEmailError("Failed to send email. Please try again.");
-    } finally {
-      setEmailSending(false);
-    }
-  };
-
   if (deepOpen) {
     return (
       <QuestionsPhase
@@ -199,66 +168,6 @@ export function ResultsPhase() {
 
   return (
     <PhaseShell maxWidth="max-w-7xl">
-      {emailModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm print:hidden">
-          <div className="w-full max-w-md rounded-3xl border bg-card p-6 shadow-xl">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold">Email Report</h3>
-              <button
-                onClick={() => setEmailModal(false)}
-                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <XCircle size={20} />
-              </button>
-            </div>
-            
-            {emailSent ? (
-              <div className="mt-6 flex flex-col items-center py-4 text-center">
-                <CheckCircle2 size={48} className="mb-4 text-[color:var(--success)]" />
-                <p className="text-lg font-medium">Email Sent Successfully</p>
-                <p className="mt-2 text-sm text-muted-foreground">Your report has been sent to {reportEmail}</p>
-                <button
-                  onClick={() => setEmailModal(false)}
-                  className="mt-6 w-full rounded-xl bg-ink/5 py-3 text-sm font-semibold transition-colors hover:bg-ink/10"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSendEmail} className="mt-6">
-                <p className="mb-4 text-sm text-muted-foreground">
-                  Thanks for connecting with us at Secure Brampton! Send a copy of this executive report and recommended next steps to your inbox.
-                </p>
-                <label className="block">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    Email Address
-                  </div>
-                  <input
-                    type="email"
-                    required
-                    value={reportEmail}
-                    onChange={(e) => setReportEmail(e.target.value)}
-                    className="w-full rounded-xl border bg-transparent px-4 py-3 text-sm focus:border-[color:var(--cyan)] focus:outline-none"
-                    placeholder="you@company.com"
-                  />
-                </label>
-                {emailError && <div className="mt-2 text-sm text-[color:var(--danger)]">{emailError}</div>}
-                
-                <button
-                  type="submit"
-                  disabled={emailSending}
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 disabled:opacity-50"
-                  style={{ background: "linear-gradient(135deg, var(--cyan-glow), var(--cyan))" }}
-                >
-                  {emailSending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
-                  {emailSending ? "Sending..." : "Send Report"}
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -290,15 +199,6 @@ export function ResultsPhase() {
             onClick={() => window.print()}
           >
             <Download size={16} /> Download Report
-          </button>
-          <button
-            className="inline-flex items-center gap-2 rounded-xl border border-ink/15 bg-ink/5 px-4 py-2 text-sm text-foreground transition-colors hover:bg-ink/10"
-            onClick={() => {
-              setEmailSent(false);
-              setEmailModal(true);
-            }}
-          >
-            <Mail size={16} /> Email Report
           </button>
           <a
             href={s.calendlyUrl}
