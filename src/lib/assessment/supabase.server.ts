@@ -331,15 +331,20 @@ export async function saveWebinarRegistrationToDb(data: {
         .insert(payload)
         .select();
 
-      if (error) throw error;
-      console.log("Successfully saved webinar registration to remote Supabase table.");
+      if (error) {
+        console.error("[Supabase Error] Failed inserting into webinar_registrations table:", error.message, error.details, error.hint);
+        throw error;
+      }
+      console.log("[Supabase Success] Successfully saved webinar registration to remote Supabase table.");
       return dbData;
     } catch (err: any) {
-      console.warn(
-        "Could not save webinar registration to remote Supabase table. Saved locally instead. Reason:",
+      console.error(
+        "[Supabase Warning] Could not save webinar registration to remote Supabase table. Saved locally instead. Reason:",
         err.message || err
       );
     }
+  } else {
+    console.warn("[Supabase Warning] supabaseAdminClient is null. Check SUPABASE_URL and SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY in environment variables.");
   }
 
   return [record];
