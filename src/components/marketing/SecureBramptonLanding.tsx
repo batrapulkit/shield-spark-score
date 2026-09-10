@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import "../../styles/secure-brampton.css";
 import React, { useEffect, useState } from "react";
-import { submitToCrm } from "@/lib/assessment/scan.functions";
+import { submitToCrm, submitWebinarRegistration } from "@/lib/assessment/scan.functions";
 
 export function SecureBramptonLanding() {
   const [showCta, setShowCta] = useState(false);
@@ -30,6 +30,19 @@ export function SecureBramptonLanding() {
     const phone = (formData.get("phone") as string) || "";
 
     try {
+      // 1. Record in dedicated webinar_registrations table
+      await submitWebinarRegistration({
+        data: {
+          name,
+          email,
+          business,
+          phone,
+          webinarTitle: selectedCourse,
+          sourceDomain: "Secure Brampton",
+        },
+      });
+
+      // 2. Also register in general CRM / lead capture if needed
       await submitToCrm({
         data: {
           lead: {
@@ -38,7 +51,7 @@ export function SecureBramptonLanding() {
             business,
             phone,
             role: "Event Registration",
-            decisionMaker: "Yes, I decide", // Default decision maker so it isn't completely empty
+            decisionMaker: "Yes, I decide",
             consent: true,
             sourceDomain: `Secure Brampton Session: ${selectedCourse}`
           },

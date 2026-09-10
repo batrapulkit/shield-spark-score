@@ -354,11 +354,11 @@ export const DEEP_QUESTIONS: QuestionDef[] = [
     explainer:
       "VMware and related virtualization systems are critical infrastructure. Unpatched virtualization servers are a primary target for ransomware deployment.",
     options: [
-      { label: "Yes", value: 1 },
-      { label: "Sort of", value: 0.5 },
-      { label: "No", value: 0 },
-      { label: "Not sure", value: 0 },
+      { label: "No", value: 1 },
+      { label: "Yes, fully patched and restricted access", value: 1 },
+      { label: "Yes, but needs patching or review", value: 0 },
+      { label: "Not sure", value: 0.5 },
     ],
-    weight: 0,
+    weight: 1,
   },
 ];

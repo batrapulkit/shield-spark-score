@@ -26,6 +26,8 @@ import {
   saveAdminSettings,
   getSubmissionsList,
   deleteSubmissionRecord,
+  getWebinarRegistrationsList,
+  deleteWebinarRegistrationRecord,
 } from "@/lib/assessment/scan.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -45,10 +47,11 @@ function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   // Navigation
-  const [activeTab, setActiveTab] = useState<"submissions" | "settings" | "questions">("submissions");
+  const [activeTab, setActiveTab] = useState<"submissions" | "webinars" | "settings" | "questions">("submissions");
 
   // System states
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [webinarRegistrations, setWebinarRegistrations] = useState<any[]>([]);
   const [settings, setSettings] = useState({
     calendlyUrl: "https://calendly.com/shieldidentity-ca/consultation",
     resourcesUrl: "https://shield-identity.com/resources",
@@ -84,6 +87,14 @@ function AdminPage() {
       // Validate password by attempting to retrieve submissions
       const list = await getSubmissionsList({ data: { password: pass } });
       setSubmissions(list);
+
+      // Load webinar registrations from separate table
+      try {
+        const wList = await getWebinarRegistrationsList({ data: { password: pass } });
+        setWebinarRegistrations(wList);
+      } catch (wErr) {
+        console.warn("Could not load webinar registrations:", wErr);
+      }
       
       // Load configurations
       const config = await getAdminSettings();
@@ -276,6 +287,51 @@ function AdminPage() {
     document.body.removeChild(link);
   };
 
+  const handleDeleteWebinar = async (idOrEmail: string) => {
+    if (!window.confirm(`Are you sure you want to delete this webinar registration?`)) {
+      return;
+    }
+    try {
+      await deleteWebinarRegistrationRecord({
+        data: {
+          password,
+          idOrEmail,
+        },
+      });
+      setWebinarRegistrations(webinarRegistrations.filter((w) => w.id !== idOrEmail && w.email !== idOrEmail));
+    } catch (err: any) {
+      alert(`Error deleting webinar registration: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  const handleExportWebinarsCSV = () => {
+    if (webinarRegistrations.length === 0) return;
+
+    const headers = ["Name", "Email", "Business", "Phone", "Webinar Session", "Status", "Source", "Date"];
+    const rows = webinarRegistrations.map((w) => [
+      w.name || "",
+      w.email || "",
+      w.business || "",
+      w.phone || "",
+      w.webinar_title || "",
+      w.status || "Registered",
+      w.source_domain || "Secure Brampton",
+      w.created_at ? new Date(w.created_at).toLocaleString() : "",
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `webinar_registrations_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Filtered submissions
   const filteredSubmissions = submissions.filter((sub) => {
     const matchesSearch =
@@ -417,6 +473,7 @@ function AdminPage() {
       <div className="mt-8 flex border-b border-ink/10 overflow-x-auto space-x-1 sm:space-x-2 scrollbar-none">
         {[
           { id: "submissions", label: "Leads & Submissions", icon: Database },
+          { id: "webinars", label: `Webinar Registrations (${webinarRegistrations.length})`, icon: Server },
           { id: "settings", label: "Global Settings & Links", icon: Link2 },
           { id: "questions", label: "Questions & Answers Editor", icon: Cpu },
         ].map((tab) => {
@@ -551,6 +608,78 @@ function AdminPage() {
                         </tr>
                       );
                     })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Webinar Registrations */}
+        {activeTab === "webinars" && (
+          <div className="glass rounded-3xl p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+              <h2 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+                <Server size={18} className="text-muted-foreground" />
+                Webinar & Workshop Button Registrations
+              </h2>
+              <button
+                onClick={handleExportWebinarsCSV}
+                disabled={webinarRegistrations.length === 0}
+                className="inline-flex items-center gap-2 rounded-xl bg-ink/5 px-3 py-1.5 text-xs font-semibold text-foreground transition-all hover:bg-ink/10 disabled:opacity-40 border border-ink/10"
+              >
+                <Download size={14} /> Export CSV
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              {webinarRegistrations.length === 0 ? (
+                <div className="py-12 text-center text-sm text-muted-foreground">
+                  No webinar registrations recorded yet.
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-ink/10 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      <th className="py-3 px-2">Attendee Name & Email</th>
+                      <th className="py-3 px-2">Business</th>
+                      <th className="py-3 px-2">Registered Session / Webinar</th>
+                      <th className="py-3 px-2">Source</th>
+                      <th className="py-3 px-2">Date</th>
+                      <th className="py-3 px-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-ink/5">
+                    {webinarRegistrations.map((w: any, idx: number) => (
+                      <tr key={w.id || `${w.email}_${idx}`} className="hover:bg-ink/5 transition-colors">
+                        <td className="py-4 px-2">
+                          <div className="font-semibold text-foreground">{w.name || "N/A"}</div>
+                          <div className="text-xs text-muted-foreground">{w.email}</div>
+                          {w.phone && <div className="text-[10px] text-muted-foreground">{w.phone}</div>}
+                        </td>
+                        <td className="py-4 px-2 text-muted-foreground text-xs">
+                          {w.business || "N/A"}
+                        </td>
+                        <td className="py-4 px-2 font-medium text-xs text-[color:var(--cyan)]">
+                          {w.webinar_title || "General Webinar"}
+                        </td>
+                        <td className="py-4 px-2 text-xs text-muted-foreground">
+                          {w.source_domain || "Secure Brampton"}
+                        </td>
+                        <td className="py-4 px-2 text-xs text-muted-foreground">
+                          {w.created_at ? new Date(w.created_at).toLocaleString() : "N/A"}
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          <button
+                            onClick={() => handleDeleteWebinar(w.id || w.email)}
+                            className="p-1.5 rounded-lg bg-destructive/10 text-destructive border border-destructive/10 hover:bg-destructive/20 transition-colors"
+                            aria-label="Delete Webinar Registration"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               )}

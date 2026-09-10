@@ -8,6 +8,9 @@ import {
   deleteSubmission,
   getGlobalSettings,
   saveGlobalSettings,
+  saveWebinarRegistrationToDb,
+  getWebinarRegistrationsFromDb,
+  deleteWebinarRegistrationFromDb,
 } from "./supabase.server";
 
 export const runScan = createServerFn({ method: "POST" })
@@ -435,5 +438,44 @@ export const sendReportEmail = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     return sendReportEmailDirectly(data);
+  });
+
+export const submitWebinarRegistration = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z
+      .object({
+        name: z.string(),
+        email: z.string().email(),
+        business: z.string(),
+        phone: z.string().optional(),
+        webinarTitle: z.string(),
+        sourceDomain: z.string().optional(),
+      })
+      .parse(data)
+  )
+  .handler(async ({ data }) => {
+    return await saveWebinarRegistrationToDb(data);
+  });
+
+export const getWebinarRegistrationsList = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({ password: z.string() }).parse(data)
+  )
+  .handler(async ({ data }) => {
+    if (data.password !== (process.env.ADMIN_PASSWORD || "shield2025")) {
+      throw new Error("Unauthorized access");
+    }
+    return await getWebinarRegistrationsFromDb();
+  });
+
+export const deleteWebinarRegistrationRecord = createServerFn({ method: "POST" })
+  .validator((data: unknown) =>
+    z.object({ password: z.string(), idOrEmail: z.string() }).parse(data)
+  )
+  .handler(async ({ data }) => {
+    if (data.password !== (process.env.ADMIN_PASSWORD || "shield2025")) {
+      throw new Error("Unauthorized access");
+    }
+    return await deleteWebinarRegistrationFromDb(data.idOrEmail);
   });
 

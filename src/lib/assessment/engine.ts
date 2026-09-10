@@ -158,6 +158,7 @@ export interface Flags {
   compliance: boolean;
   insurance: boolean;
   m365Consolidation: boolean;
+  vmware: boolean;
 }
 
 export function computeFlags(
@@ -188,6 +189,7 @@ export function computeFlags(
   const incidentHistory = answers.incidenthistory === "Yes";
   const remote =
     answers.remotework === "Yes" || answers.remotework === "Sometimes";
+  const vmware = answered("vmware") && (av("vmware") ?? 1) < 1;
 
   const sensitive = isSensitive(profile, answers);
   const breaches = scan?.breach.count ?? 0;
@@ -237,6 +239,7 @@ export function computeFlags(
     compliance,
     insurance,
     m365Consolidation,
+    vmware,
   };
 }
 
@@ -474,6 +477,21 @@ export function buildRecommendations(
       why: `Likely relevant: ${industryFramework}. Building against the framework early is cheaper than retrofitting.`,
       fix: "Do a gap assessment against the framework and prioritise the top-5 controls.",
       diyGuide: "guide-compliance",
+    });
+  }
+
+  if (flags.vmware) {
+    cards.push({
+      id: "vmware-hardening",
+      order: 11.5,
+      title: "Harden & patch VMware virtualization infrastructure",
+      priority: "High",
+      category: "Infrastructure Security",
+      impact:
+        "Unpatched ESXi and vCenter management interfaces are primary targets for automated ransomware deployment.",
+      why: "Virtualization hypervisors host your core business servers. Attackers exploit known VMware vulnerabilities (such as ESXiArgs) to encrypt virtual machines en masse.",
+      fix: "Ensure VMware ESXi and vCenter management interfaces are isolated from the public internet, require MFA for vCenter admin access, apply current patch updates, and maintain isolated VM backups.",
+      diyGuide: "guide-patching",
     });
   }
 

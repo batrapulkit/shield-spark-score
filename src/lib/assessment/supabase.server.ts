@@ -47,17 +47,22 @@ function ensureLocalDb() {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(LOCAL_DB_PATH)) {
-    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ submissions: [], settings: null }, null, 2));
+    fs.writeFileSync(
+      LOCAL_DB_PATH,
+      JSON.stringify({ submissions: [], settings: null, webinar_registrations: [] }, null, 2)
+    );
   }
 }
 
 function readLocalDb() {
   ensureLocalDb();
   try {
-    return JSON.parse(fs.readFileSync(LOCAL_DB_PATH, "utf-8"));
+    const data = JSON.parse(fs.readFileSync(LOCAL_DB_PATH, "utf-8"));
+    if (!data.webinar_registrations) data.webinar_registrations = [];
+    return data;
   } catch (err) {
     console.error("Failed to read local fallback DB:", err);
-    return { submissions: [], settings: null };
+    return { submissions: [], settings: null, webinar_registrations: [] };
   }
 }
 
@@ -267,4 +272,128 @@ export async function saveGlobalSettings(settings: any) {
   }
 
   return [settings];
+}
+
+export interface WebinarRegistration {
+  id?: string;
+  name: string;
+  email: string;
+  business: string;
+  phone?: string;
+  webinar_title: string;
+  status?: string;
+  source_domain?: string;
+  created_at?: string;
+}
+
+export async function saveWebinarRegistrationToDb(data: {
+  name: string;
+  email: string;
+  business: string;
+  phone?: string;
+  webinarTitle: string;
+  sourceDomain?: string;
+}) {
+  const record: WebinarRegistration = {
+    id: `webinar_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    name: data.name,
+    email: data.email,
+    business: data.business,
+    phone: data.phone || "",
+    webinar_title: data.webinarTitle,
+    status: "Registered",
+    source_domain: data.sourceDomain || "Secure Brampton",
+    created_at: new Date().toISOString(),
+  };
+
+  // Save locally
+  const db = readLocalDb();
+  if (!db.webinar_registrations) db.webinar_registrations = [];
+  db.webinar_registrations.unshift(record);
+  writeLocalDb(db);
+  console.log("Webinar registration saved to local database file.");
+
+  if (supabaseAdminClient) {
+    try {
+      const payload = {
+        name: record.name,
+        email: record.email,
+        business: record.business,
+        phone: record.phone,
+        webinar_title: record.webinar_title,
+        status: record.status,
+        source_domain: record.source_domain,
+        created_at: record.created_at,
+      };
+
+      const { data: dbData, error } = await supabaseAdminClient
+        .from("webinar_registrations")
+        .insert(payload)
+        .select();
+
+      if (error) throw error;
+      console.log("Successfully saved webinar registration to remote Supabase table.");
+      return dbData;
+    } catch (err: any) {
+      console.warn(
+        "Could not save webinar registration to remote Supabase table. Saved locally instead. Reason:",
+        err.message || err
+      );
+    }
+  }
+
+  return [record];
+}
+
+export async function getWebinarRegistrationsFromDb() {
+  const db = readLocalDb();
+  const localItems = db.webinar_registrations || [];
+
+  if (supabaseAdminClient) {
+    try {
+      const { data, error } = await supabaseAdminClient
+        .from("webinar_registrations")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const existingEmails = new Set(data.map((item: any) => `${item.email}_${item.webinar_title}`));
+        const newLocals = localItems.filter(
+          (item: any) => !existingEmails.has(`${item.email}_${item.webinar_title}`)
+        );
+        return [...data, ...newLocals];
+      }
+    } catch (err: any) {
+      console.log(
+        "Could not load webinar registrations from Supabase, returning local list. Reason:",
+        err.message || err
+      );
+    }
+  }
+
+  return localItems;
+}
+
+export async function deleteWebinarRegistrationFromDb(idOrEmail: string) {
+  const db = readLocalDb();
+  if (db.webinar_registrations) {
+    db.webinar_registrations = db.webinar_registrations.filter(
+      (r: any) => r.id !== idOrEmail && r.email !== idOrEmail
+    );
+    writeLocalDb(db);
+  }
+
+  if (supabaseAdminClient) {
+    try {
+      await supabaseAdminClient
+        .from("webinar_registrations")
+        .delete()
+        .or(`id.eq.${idOrEmail},email.eq.${idOrEmail}`);
+    } catch (err: any) {
+      console.warn("Failed deleting webinar registration in Supabase:", err.message || err);
+    }
+  }
+
+  return { success: true };
 }
