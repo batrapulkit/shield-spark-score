@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import nodemailer from "nodemailer";
 import { scanDomain, fetchEmailBreaches } from "./scan.server";
 import { mockScan } from "./scan";
 import {
@@ -380,51 +381,109 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
     </html>
   `;
 
-  // Attempt sending via Resend API, with domain fallback if custom domain is unverified
-  const sendEmailRequest = async (fromAddress: string) => {
-    return await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
+  // Helper for sending via Nodemailer / SMTP (e.g. Gmail App Password or custom SMTP)
+  const sendViaSmtp = async () => {
+    const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER;
+    const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASS;
+    const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+    const smtpPort = Number(process.env.SMTP_PORT) || 465;
+
+    if (!smtpUser || !smtpPass) return false;
+
+    console.log(`[SMTP Email] Attempting send to ${data.email} via ${smtpHost}...`);
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
       },
-      body: JSON.stringify({
-        from: fromAddress,
-        to: data.email,
-        subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
-        html,
-      }),
     });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || `Shield Identity <${smtpUser}>`,
+      to: data.email,
+      subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
+      html,
+    });
+
+    console.log(`[SMTP Email] Report successfully sent to ${data.email} via ${smtpUser}`);
+    return true;
   };
 
-  const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <onboarding@resend.dev>";
-  const fallbackFrom = "Shield Identity <onboarding@resend.dev>";
-
-  try {
-    let res = await sendEmailRequest(primaryFrom);
-    if (!res.ok) {
-      const errText = await res.text();
-      console.warn(`Primary Resend email send (${primaryFrom}) failed:`, errText);
-      
-      // If primary from domain fails, attempt fallback to default onboarding address
-      if (primaryFrom !== fallbackFrom) {
-        console.log(`Retrying report email via fallback sender (${fallbackFrom})...`);
-        res = await sendEmailRequest(fallbackFrom);
-        if (!res.ok) {
-          const fallbackErrText = await res.text();
-          console.error("Fallback Resend email send failed:", fallbackErrText);
-          throw new Error(`Resend Error: ${fallbackErrText}`);
-        }
-      } else {
-        throw new Error(`Resend Error: ${errText}`);
-      }
+  // If SMTP is specifically requested or configured first, try SMTP
+  const preferSmtp = Boolean(process.env.SMTP_USER || process.env.GMAIL_USER);
+  if (preferSmtp) {
+    try {
+      const sent = await sendViaSmtp();
+      if (sent) return { success: true, method: "smtp" };
+    } catch (smtpErr: any) {
+      console.warn("[SMTP Email] Primary SMTP send failed, falling back to Resend:", smtpErr.message || smtpErr);
     }
-    console.log(`[Resend Email] Report successfully sent to ${data.email}`);
-    return { success: true };
-  } catch (err: any) {
-    console.error("Failed to send report email via Resend:", err.message || err);
-    throw err;
   }
+
+  // Attempt sending via Resend API
+  if (RESEND_API_KEY) {
+    const sendEmailRequest = async (fromAddress: string) => {
+      return await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: fromAddress,
+          to: data.email,
+          subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
+          html,
+        }),
+      });
+    };
+
+    const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <onboarding@resend.dev>";
+    const fallbackFrom = "Shield Identity <onboarding@resend.dev>";
+
+    try {
+      let res = await sendEmailRequest(primaryFrom);
+      if (!res.ok) {
+        const errText = await res.text();
+        console.warn(`Primary Resend email send (${primaryFrom}) failed:`, errText);
+        
+        if (primaryFrom !== fallbackFrom) {
+          console.log(`Retrying report email via fallback sender (${fallbackFrom})...`);
+          res = await sendEmailRequest(fallbackFrom);
+        }
+        
+        if (!res.ok) {
+          // If Resend failed (e.g. 403 unverified domain), attempt SMTP fallback if available
+          const smtpSent = await sendViaSmtp();
+          if (smtpSent) return { success: true, method: "smtp_fallback" };
+          throw new Error(`Resend Error: ${errText}`);
+        }
+      }
+      console.log(`[Resend Email] Report successfully sent to ${data.email}`);
+      return { success: true, method: "resend" };
+    } catch (err: any) {
+      console.error("Failed to send report email via Resend:", err.message || err);
+      // Last ditch try to send via SMTP if configured
+      try {
+        const smtpSent = await sendViaSmtp();
+        if (smtpSent) return { success: true, method: "smtp_fallback" };
+      } catch {}
+      throw err;
+    }
+  }
+
+  // Fallback try SMTP if RESEND_API_KEY wasn't set
+  try {
+    const smtpSent = await sendViaSmtp();
+    if (smtpSent) return { success: true, method: "smtp" };
+  } catch (smtpErr: any) {
+    console.error("[SMTP Email] Failed sending via SMTP:", smtpErr);
+  }
+
+  return { success: false, reason: "NO_EMAIL_CREDENTIALS" };
 }
 
 export const sendReportEmail = createServerFn({ method: "POST" })
