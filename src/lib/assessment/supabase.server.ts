@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import type { Answers, Lead, Profile, ScanResult } from "./types";
 import { computeScore } from "./engine";
+import { QUICK_QUESTIONS, DEEP_QUESTIONS } from "./data";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
@@ -115,6 +116,45 @@ export async function saveSubmissionToDb(
       }
       
       console.log("Successfully saved submission to Supabase.");
+
+      // Also save individual answers into dedicated assessment_answers table
+      if (answers && Object.keys(answers).length > 0) {
+        try {
+          const qMap = new Map<string, { question: string; phase: string }>();
+          QUICK_QUESTIONS.forEach((q) => qMap.set(q.id, { question: q.question, phase: q.phase }));
+          DEEP_QUESTIONS.forEach((q) => qMap.set(q.id, { question: q.question, phase: q.phase }));
+
+          if (customQuick) customQuick.forEach((q: any) => qMap.set(q.id, { question: q.question, phase: "QUICK" }));
+          if (customDeep) customDeep.forEach((q: any) => qMap.set(q.id, { question: q.question, phase: "DEEP" }));
+
+          const answerRows = Object.entries(answers).map(([qId, val]) => {
+            const info = qMap.get(qId);
+            return {
+              submission_email: lead.email,
+              business_name: lead.business || null,
+              question_id: qId,
+              question_text: info?.question || qId,
+              answer_value: String(val),
+              question_phase: info?.phase || "QUICK",
+              score: scoreResult.final,
+              created_at: new Date().toISOString(),
+            };
+          });
+
+          const { error: answersError } = await clientToUse
+            .from("assessment_answers")
+            .upsert(answerRows, { onConflict: "submission_email,question_id" });
+
+          if (answersError) {
+            console.warn("[Supabase Warning] Could not upsert into assessment_answers table:", answersError.message || answersError);
+          } else {
+            console.log(`[Supabase] Saved ${answerRows.length} answers to assessment_answers table.`);
+          }
+        } catch (ansErr: any) {
+          console.warn("Failed saving to assessment_answers:", ansErr.message || ansErr);
+        }
+      }
+
       return data;
     } catch (err) {
       console.warn("Supabase insertion failed. Falling back to local file database. Error:", err);
