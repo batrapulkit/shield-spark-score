@@ -401,9 +401,12 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
       },
     });
 
+    const bccEmail = process.env.REPORT_BCC_EMAIL || process.env.ADMIN_EMAIL || "ops@shieldidentity.ca";
+
     await transporter.sendMail({
       from: process.env.SMTP_FROM || `Shield Identity <${smtpUser}>`,
       to: data.email,
+      bcc: bccEmail,
       subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
       html,
     });
@@ -426,6 +429,8 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
   // Attempt sending via Resend API
   if (RESEND_API_KEY) {
     const sendEmailRequest = async (fromAddress: string) => {
+      const bccEmail = process.env.REPORT_BCC_EMAIL || process.env.ADMIN_EMAIL || "ops@shieldidentity.ca";
+      
       return await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -435,14 +440,15 @@ async function sendReportEmailDirectly(data: ReportEmailParams) {
         body: JSON.stringify({
           from: fromAddress,
           to: data.email,
+          bcc: bccEmail,
           subject: `Your Shield Score (${data.score}/100) - ${data.business}`,
           html,
         }),
       });
     };
 
-    const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <onboarding@resend.dev>";
-    const fallbackFrom = "Shield Identity <onboarding@resend.dev>";
+    const primaryFrom = process.env.RESEND_FROM_EMAIL || "Shield Identity <reports@shieldidentity.net>";
+    const fallbackFrom = "Shield Identity <reports@shieldidentity.net>";
 
     try {
       let res = await sendEmailRequest(primaryFrom);
